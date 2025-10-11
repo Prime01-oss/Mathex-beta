@@ -1,0 +1,110 @@
+@import '../../Theme.scss';
+@import '../Page.scss';
+
+#main-app.rtl .block-remove-button {
+    left: 1px !important;
+    right: unset !important;
+}
+
+.layout {
+    height: 100% !important;
+    direction: ltr;
+    width: 100%;
+    max-height: 100%;
+    min-width: 100%;
+
+    // --- START: THIS IS THE DEFINITIVE FIX ---
+    // This selector is more specific and uses !important to override any defaults.
+    .react-grid-placeholder {
+        background: var(--app-accent-color) !important; // Use your theme's accent color
+        opacity: 0.15 !important; // Make it a subtle wash of color
+        border-radius: 5px !important;
+        border: none !important; // Remove any unwanted borders
+        transition: all 0.2s ease-in-out !important;
+    }
+    // --- END: THE FIX ---
+    
+    .block {
+        transition: transform 0.2s ease-in-out;
+        display: flex;
+        flex-direction: row;  
+        width: 100%;
+        height: 100%;
+        gap: 5px;
+        direction: var(--app-direction);
+
+        .react-resizable-handle {
+            z-index: 100;
+
+            &::after {
+                opacity: 20%;
+                border-right: 2px solid hsla(var(--app-text-color), 1);
+                border-bottom: 2px solid hsla(var(--app-text-color), 1);
+                border-radius: 0 0 5px 0;
+            }
+        }
+
+        .block-content {
+            transition: inherit;
+            outline: 1px solid transparent;
+
+            &:has(.MafsView){
+                outline: 1px solid var(--tool-hover-bgcolor);
+            }
+        }
+
+        .block-handle {
+            transition: 0.2s;
+            padding-top: 8px;
+            font-size: 16px;
+            opacity: 0%;
+            color: hsla(var(--app-text-color), 1);
+        }
+
+        .block-remove-button {
+            display: none;
+            position: absolute;
+            z-index: 10;
+            right: 1px;
+            left: unset;        
+            top: 1px;
+            background-color: transparent;
+            height: 30px;
+            width: 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            align-items: center;
+            justify-content: center;
+            
+            .fi {
+                pointer-events: none;
+                color: hsla(var(--app-text-color), 1);
+                font-size: 10px;    
+            }
+        }
+
+        // This rule prevents the browser's default red outline on the block itself.
+        &.resizing .block-content,
+        &:focus .block-content,
+        &:focus-within .block-content {
+            outline: 1px solid var(--tool-hover-bgcolor) !important;
+        }
+
+        &:hover {
+            .block-content{
+                outline: 1px solid var(--tool-hover-bgcolor);
+                .block-remove-button{
+                    display: flex;
+                }
+            }
+
+            .block-handle {
+                opacity: 70%;
+
+                &:hover{
+                    cursor: pointer;
+                }
+            }
+        }  
+    }
+}

@@ -1,0 +1,92 @@
+@import '../Theme.scss';
+@import '~keyboard-css/dist/css/main.min.css';
+
+// --- MAIN PAGE CONTAINER ---
+// This acts as the background and provides minimal side padding.
+.page {
+  width: calc(100% - 50px);
+  height: 100%;
+  background: var(--page-bgcolor);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  border-radius: 12px 12px 0 0;
+}
+
+// --- THE NOTEBOOK "SHEET" ---
+// This is the main visual element that expands to fill the space.
+.page-grid {
+  width: 100%;
+  height: 100%;
+  background: var(--grid-bgcolor);
+//   border: 1px solid var(--app-border-color);
+  border-bottom: none; // No border at the bottom for a "floating sheet" effect
+  border-radius: 12px 12px 0 0; // Rounded corners only at the top
+  box-shadow: 0 -5px 20px rgba(0,0,0,0.05); // Subtle shadow for depth
+  display: flex;
+  flex-direction: column;
+  align-items: center; // Center the content container within the sheet
+  overflow-y: auto; // This makes the entire sheet scrollable
+
+  // Custom scrollbar for a professional look
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: hsla(var(--app-text-color), 0.2);
+    border-radius: 4px;
+    &:hover {
+      background: hsla(var(--app-text-color), 0.3);
+    }
+  }
+}
+
+// --- CONTENT CONTAINER ---
+// This holds your blocks and is constrained for readability.
+.grid-container {
+  width: 100%;
+  max-width: 900px; // Keeps text lines from being too long
+  padding-top: 100px;
+  margin-bottom: 80px;
+}
+
+// --- PLACEHOLDER STYLING (REFINED) ---
+.page-placeholder {
+  flex-grow: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+
+  .placeholder-text {
+    line-height: 1.6;
+    color: hsla(var(--app-text-color), 0.5);
+    font-weight: 300;
+    font-size: 18px;
+    text-align: center;
+
+    .fi {
+      font-size: 16px;
+      margin-bottom: 4px;
+      display: inline-block;
+    }
+
+    // Refined button style to reduce reliance on !important
+    .kbc-button {
+      background: var(--button-bgcolor);
+      border: 1px solid var(--app-border-color);
+      box-shadow: 0 2px 0 var(--app-border-color);
+      color: hsla(var(--app-text-color), 0.7);
+      font-family: inherit;
+      font-weight: 400;
+      margin: 0 4px;
+
+      &::after {
+        border: none !important;
+      }
+    }
+  }
+}
