@@ -1,3 +1,5 @@
+// File: src/renderer/components/ArchiveModal/ArchiveFileSystem.scss
+
 @import '~react-complex-tree/lib/style-modern.css';
 @import '../Theme.scss';
 
@@ -10,21 +12,111 @@
 }
 
 .archive-file-system-header {
-  padding: 12px 18px;
+  padding: 16px 18px;
   border-bottom: 1px solid var(--app-border-color);
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .header-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+  }
 
   .archive-file-system-header-title {
     color: hsla(var(--app-text-color), 0.7);
     font-size: 20px;
     font-weight: 600;
   }
+
+  .archive-search-input {
+    width: 100%;
+    padding: 8px 12px;
+    background-color: var(--file-hover-bgcolor);
+    border: 1px solid var(--app-border-color);
+    border-radius: 8px;
+    color: hsla(var(--app-text-color), 1);
+    font-size: 14px;
+    font-family: 'Rubik2', 'NotoSansArabic';
+    transition: border-color 200ms ease, box-shadow 200ms ease;
+
+    &:focus {
+      outline: none;
+      border-color: var(--selected-bgcolor);
+      box-shadow: 0 0 0 2px hsla(var(--selected-bgcolor-hsl), 0.3);
+    }
+  }
 }
+
+.archive-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.header-button {
+  background-color: var(--selected-bgcolor);
+  color: hsla(var(--app-text-color), 1);
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Rubik2', 'NotoSansArabic';
+  font-size: 13px;
+  font-weight: 500;
+  transition: background-color 150ms ease;
+
+  &:hover {
+    background-color: var(--selected-hover-bgcolor);
+  }
+
+  &:disabled {
+    background-color: var(--file-hover-bgcolor);
+    color: hsla(var(--app-text-color), 0.4);
+    cursor: not-allowed;
+  }
+
+  &.restore {
+    background-color: hsl(145, 63%, 42%);
+    color: white;
+    &:hover {
+        background-color: hsl(145, 63%, 38%);
+    }
+    &:disabled {
+        background-color: hsla(145, 63%, 42%, 0.5);
+        color: hsla(0, 0%, 100%, 0.7);
+    }
+  }
+
+  &.secondary {
+    background-color: var(--file-hover-bgcolor);
+    &:hover {
+        background-color: var(--app-border-color);
+    }
+  }
+}
+
 
 .archive-files-tree-container {
   flex-grow: 1;
   overflow-y: auto;
   padding: 8px;
+
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: hsla(var(--app-text-color), 0.2);
+    border-radius: 4px;
+    &:hover {
+      background: hsla(var(--app-text-color), 0.4);
+    }
+  }
 
   .rct-tree-root [role='tree'] {
     height: 100%;
@@ -32,15 +124,18 @@
     .rct-tree-item-title-container {
       margin-inline-start: 10px;
     }
+    
+    .rct-tree-item-title {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
 
     .rct-tree-item-button {
-      // --- FIX STARTS HERE ---
       display: flex;
       align-items: center;
       justify-content: flex-start;
       width: 100%;
-      // --- FIX ENDS HERE ---
-      
       background-color: transparent;
       color: hsla(var(--app-text-color), 1);
       border-radius: 8px;
@@ -48,10 +143,11 @@
       font-size: 16px;
       height: 40px;
       padding-inline-start: 12px;
-      transition: background-color 100ms ease-out, color 100ms ease-out;
+      transition: background-color 150ms ease-out, transform 150ms ease-out;
 
       &:hover {
         background-color: var(--file-hover-bgcolor);
+        transform: translateX(4px);
       }
     }
 
@@ -69,17 +165,18 @@
     }
 
     .rct-tree-item-arrow {
-      display: none; // Hiding the default arrow to use our own icons
+      display: none;
     }
 
-    // Adding custom folder and file icons
     .rct-tree-item-button::before {
       color: var(--tool-color);
       font-family: 'uicons-regular-rounded';
       font-weight: 300;
       font-size: 20px;
-      content: '\f35d'; // Default file icon
+      content: '\f35d'; // File icon
       padding-inline-end: 12px;
+      display: inline-flex;
+      align-items: center;
     }
 
     .rct-tree-item-button-isFolder.rct-tree-item-button-expanded::before {
@@ -90,4 +187,23 @@
       content: '\f1e6'; // Collapsed folder icon
     }
   }
+}
+
+.item-checkbox {
+  margin-right: 12px;
+  cursor: pointer;
+  width: 16px;
+  height: 16px;
+}
+
+.archive-feedback-message {
+    padding: 20px;
+    text-align: center;
+    color: hsla(var(--app-text-color), 0.6);
+    &.error {
+        color: hsl(0, 70%, 60%);
+    }
+    .retry-button {
+        margin-top: 12px;
+    }
 }

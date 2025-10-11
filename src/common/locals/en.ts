@@ -25,6 +25,7 @@ export const EN_TRANSLATION = {
   Red: 'Red',
   Blue: 'Blue',
   Green: 'Green',
+  Black: 'Black',
   Yellow: 'Yellow',
   Purple: 'Purple',
   Pink: 'Pink',

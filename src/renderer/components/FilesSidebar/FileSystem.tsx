@@ -1,7 +1,8 @@
 /* eslint-disable import/named */
 import ErrorModal from '@components/common/Modals/ErrorModal';
 import { useGeneralContext } from '@components/GeneralContext';
-import React, { SetStateAction, useEffect, useState } from 'react';
+// --- FIX IS HERE: Added useCallback to the import list ---
+import React, { SetStateAction, useEffect, useState, useCallback } from 'react';
 import {
   Tree,
   ControlledTreeEnvironment,
@@ -26,7 +27,7 @@ import {
 } from './FileSystemHelpers';
 import { MathTreeItem, TreeItemsObj } from './types';
 import { useTranslation } from 'react-i18next';
-import ContextMenu from './ContextMenu'; // <-- ADDED
+import ContextMenu from './ContextMenu';
 
 type receivedProps = { filesPath: string; root: SetStateAction<TreeItemsObj> };
 declare global {
@@ -53,11 +54,15 @@ function FileSystem() {
   const [selectedDirectory, setSelectedDirectory] =
     useState<TreeItemIndex>('root');
   const [focusedItem, setFocusedItem] = useState<TreeItemIndex>(-1);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: TreeItemIndex } | null>(null); // <-- ADDED
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: TreeItemIndex } | null>(null);
+
+  const fetchNotebooks = useCallback(() => {
+    window.api.getNotebooks();
+  }, []);
 
   useEffect(() => {
-    window.api.getNotebooks();
-  }, [items]);
+    fetchNotebooks();
+  }, [fetchNotebooks]);
 
   useEffect(() => {
     window.api.receive('gotNotebooks', (data: receivedProps) => {
@@ -65,12 +70,21 @@ function FileSystem() {
     });
   }, []);
 
+  useEffect(() => {
+    const cleanup = window.api.onNotebooksRefresh(() => {
+        fetchNotebooks();
+    });
+
+    return () => {
+        cleanup();
+    };
+  }, [fetchNotebooks]);
+
   const handleOnDrop = (
     draggedItems: TreeItem[],
     target: DraggingPositionItem | DraggingPositionBetweenItems,
   ) => {
     setItems((prev) => {
-      // Handle D&D intentionally only for one item
       const draggedItem = draggedItems[0];
       if (draggedToTheSameParent(prev, draggedItem, target)) return prev;
       let dest: TreeItemIndex = '';
@@ -197,7 +211,6 @@ function FileSystem() {
     }
   };
 
-  // --- START: ADDED FUNCTIONS FOR CONTEXT MENU ---
   const handleArchiveItem = async () => {
     if (!contextMenu) return;
     const itemToArchive = items[contextMenu.item];
@@ -209,7 +222,6 @@ function FileSystem() {
         const newItems = { ...prev };
         const itemToDelete = contextMenu.item;
 
-        // Also remove it from its parent's children array
         const parent = getParent(newItems, itemToDelete);
         if (parent) {
           newItems[parent.index] = {
@@ -218,7 +230,6 @@ function FileSystem() {
           };
         }
 
-        // Recursively delete the item and all its children if it's a folder
         const itemsToDelete = [itemToDelete];
         const queue = [...(newItems[itemToDelete]?.children ?? [])];
         while (queue.length > 0) {
@@ -248,7 +259,7 @@ function FileSystem() {
     const itemElement = target.closest('[data-rct-item-id]');
     if (itemElement) {
         const itemId = itemElement.getAttribute('data-rct-item-id');
-        if (itemId && itemId !== 'root') { // Don't allow archiving the root
+        if (itemId && itemId !== 'root') {
             setContextMenu({
                 x: e.clientX,
                 y: e.clientY,
@@ -257,7 +268,6 @@ function FileSystem() {
         }
     }
   };
-  // --- END: ADDED FUNCTIONS FOR CONTEXT MENU ---
 
   return (
     <div className='file-system' onKeyUp={handleDeleteItem}>
@@ -278,7 +288,6 @@ function FileSystem() {
           </button>
         </div>
       </div>
-      {/* ADDED onContextMenu HANDLER HERE vvv */}
       <div className='files-tree-container' onClick={handleClickedOutsideItem} onContextMenu={handleContextMenu}>
         <ControlledTreeEnvironment
           items={items}
@@ -337,7 +346,6 @@ function FileSystem() {
         {errorModalContent}
       </ErrorModal>
 
-      {/* ADDED CONTEXT MENU RENDER vvv */}
       {contextMenu && (
         <ContextMenu
             x={contextMenu.x}

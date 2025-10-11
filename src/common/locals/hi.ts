@@ -29,6 +29,7 @@ export const HI_TRANSLATION = {
   Yellow: 'पीला',
   Purple: 'बैंगनी',
   Pink: 'गुलाबी',
+  Black: 'काला',
   'Text Block': 'टेक्स्ट ब्लॉक जोड़ें',
   'Math Block': 'गणित ब्लॉक जोड़ें',
   'Graph Block': 'ग्राफ़ ब्लॉक जोड़ें',

@@ -61,7 +61,7 @@ ipcMain.handle('get-archived-notebooks', async () => {
       index: 'root',
       data: 'Archived',
       path: archivePath,
-      children: [] as string[], // <-- FIX APPLIED HERE
+      children: [] as string[],
       isFolder: true,
     },
   };
@@ -80,7 +80,7 @@ ipcMain.handle('get-archived-notebooks', async () => {
         data: fileName,
         path: filePath,
         isFolder: isFolder,
-        children: [] as string[], // <-- FIX APPLIED HERE
+        children: [] as string[],
       };
 
       items[filePath] = item;
@@ -109,3 +109,42 @@ ipcMain.handle('archive-item', async (event, itemPath) => {
     return { success: false, error: error.message };
   }
 });
+
+// --- START: NEW CODE TO ADD ---
+
+// This function handles restoring the archived files.
+ipcMain.handle('restore-archived-notebooks', async (event, pathsToRestore: string[]) => {
+  const userDataPath = app.getPath('userData');
+  const notebooksPath = path.join(userDataPath, 'notebooks');
+  const archivePath = path.join(userDataPath, 'archive');
+  let successful = 0;
+  let failed = 0;
+
+  for (const fullPath of pathsToRestore) {
+    // We get the base name to preserve folder structure
+    const relativePath = path.basename(fullPath);
+    const sourcePath = path.join(archivePath, relativePath);
+    const destinationPath = path.join(notebooksPath, relativePath);
+
+    try {
+      await fs.ensureDir(path.dirname(destinationPath));
+      await fs.move(sourcePath, destinationPath);
+      successful++;
+    } catch (err) {
+      console.error(`Failed to restore: ${relativePath}`, err);
+      failed++;
+    }
+  }
+  
+  return { successful, failed };
+});
+
+// This function sends a message to the frontend to tell the main file list to refresh.
+ipcMain.on('request-notebooks-refresh', () => {
+    const window = BrowserWindow.getFocusedWindow();
+    if (window) {
+        window.webContents.send('notebooks-need-refresh');
+    }
+});
+
+// --- END: NEW CODE TO ADD ---
