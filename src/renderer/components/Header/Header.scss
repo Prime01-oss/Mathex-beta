@@ -1,0 +1,254 @@
+@import '../Theme.scss';
+
+.header {
+  width: calc(100% - 20px);
+  max-width: 100%;
+  align-self: center;
+  padding-top: 5px;
+  height: calc(0% + 45px);
+  display: flex;
+
+  .main-heading {
+    justify-content: space-between;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    direction: var(--app-direction);
+    height: 100%;
+    width: 100%;
+
+    .header-content {
+      gap: 10px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      direction: var(--app-direction);
+      height: 100%;
+      max-width: calc(100% - 160px);
+      white-space: nowrap;
+      width: max-content;
+      -webkit-app-region: no-drag;
+
+
+      div {
+        width: max-content;
+        font-weight: 300;
+        color: var(--erwt-heading-color);
+        line-height: 1;
+      }
+
+      .tags {
+        width: max-content;
+        max-width: inherit;
+        display: flex;
+        flex-direction: row;
+        direction: var(--app-direction);
+        padding-inline-start: 5px;
+        gap: 10px;
+      }
+
+      .tag-pill {
+        padding: 3px 12px 3px 12px;
+        display: flex;
+        justify-content: space-between;
+        background-color: var(--pill-bgcolor);
+        border-radius: 5px;
+        transition: 0.1s;
+        height: max-content;
+
+        .tag-action::before {
+          content: "#";
+        }
+
+        .tag-content {
+          width: max-content;
+          font-size: 16px;
+          display: flex;
+          gap: 5px;
+          height: 16px;
+        }
+
+        .tag-action {
+          opacity: 70%;
+          width: 16px;
+          font-size: 16px;
+
+          &:hover {
+            cursor: pointer;
+            opacity: 100%;
+          }
+        }
+
+        &:hover {
+          filter: var(--tag-filter);
+
+          .tag-action::before {
+            content: "X";
+            font-size: 14px;
+          }
+        }
+
+        &:active {
+          filter: var(--tag-filter);
+        }
+
+        &.new {
+          background-color: var(--pill-bgcolor);
+          font-size: 16px;
+          gap: 5px;
+
+          &::before {
+            opacity: 70%;
+            content: "+";
+          }
+
+          &:hover {
+            cursor: pointer;
+            filter: unset;
+            background-color: var(--pill-hover-bgcolor);
+          }
+
+          &:active {
+            cursor: pointer;
+            filter: unset;
+            background-color: var(--pill-active-bgcolor);
+            transform: scale(0.98);
+          }
+        }
+      }
+
+      .filepath {
+        max-width: 80%;
+        font-size: 23px;
+        display: flex;
+        flex-direction: row;
+        direction: var(--app-direction);
+        gap: 6px;
+        padding-bottom: 3px;
+
+        .filepath-name {
+          font-weight: 600;
+
+          &:focus {
+            outline: none;
+          }
+        }
+
+        &-folder.hide {
+          display: none;
+        }
+      }
+
+      #logo {
+        fill: hsla(var(--app-text-color), 1);
+        display: block;
+        width: 35px;
+        height: 45%;
+        filter: var(--logo-filter);
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 45px;
+        height: 100%;
+      }
+    }
+
+    .header-draggable {
+      height: 100%;
+      width: 100%;
+      -webkit-app-region: drag;
+
+    }
+
+    .header-controls {
+      z-index: 1000;
+      background-color: transparent;
+      height: inherit;
+      -webkit-app-region: no-drag;
+
+      .window-titlebar-controls {
+        height: inherit;
+        position: unset;
+
+        .control {
+          border-radius: 10px;
+          transition: 0.1s;
+          color: var(--app-text-color);
+
+          &:hover{
+            background-color: var(--file-hover-bgcolor);
+            &.close {
+              background: var(--button-danger);
+            }
+          }
+          &:active {
+            transform: scale(0.95);
+          }
+        }
+      }
+    }
+  }
+}
+// src/renderer/components/Header/Header.scss
+
+// ... (existing styles)
+
+.header-content {
+  // ... (existing styles for header-content)
+  justify-content: space-between;
+  width: 100%;
+
+  .header-left, .header-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 33%;
+  }
+
+  .header-right {
+    justify-content: flex-end;
+  }
+
+  .header-center {
+    display: flex;
+    justify-content: center;
+    flex-grow: 1;
+  }
+}
+
+.search-bar {
+  display: flex;
+  align-items: center;
+  background-color: var(--math-block-bgcolor);
+  border-radius: 5px;
+  padding: 5px 10px;
+  width:400px; // You can adjust this width as needed
+  border: 1px solid var(--app-border-color);
+
+  i {
+    color: var(--erwt-heading-color);
+    margin-right: 10px;
+    opacity: 0.7;
+  }
+
+  input {
+    background-color: transparent;
+    border: none;
+    color: var(--erwt-heading-color);
+    width: 100%;
+    font-size: 16px;
+    font-family: var(--app-font-family);
+
+    &:focus {
+      outline: none;
+    }
+
+    &::placeholder {
+      color: var(--erwt-heading-color);
+      opacity: 0.5;
+    }
+  }
+}
