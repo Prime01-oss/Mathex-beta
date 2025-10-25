@@ -5,10 +5,9 @@ import {
   Tree,
   ControlledTreeEnvironment,
   TreeItemIndex,
-  TreeItem, // Import the base TreeItem type
+  TreeItem,
 } from 'react-complex-tree';
 import './ArchiveFileSystem.scss';
-// Make sure this import path is correct for your project structure
 import { MathTreeItem, TreeItemsObj } from '../FilesSidebar/types'; 
 import { useTranslation } from 'react-i18next';
 import Fuse from 'fuse.js';
@@ -19,7 +18,10 @@ function ArchiveFileSystem() {
   const [originalItems, setOriginalItems] = useState<TreeItemsObj>({
     root: { index: 'root', data: 'Archived', path: '', children: [], isFolder: true },
   });
+  
+  // --- 1. ADD STATE FOR SEARCH ---
   const [searchQuery, setSearchQuery] = useState('');
+  
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,6 +52,7 @@ function ArchiveFileSystem() {
     fetchArchivedNotebooks();
   }, [fetchArchivedNotebooks]);
 
+  // --- 2. ADD FILTERING LOGIC ---
   const filteredItems = useMemo(() => {
     if (!searchQuery) return originalItems;
     
@@ -68,7 +71,6 @@ function ArchiveFileSystem() {
     const visibleItems = new Set<TreeItemIndex>();
     searchResults.forEach(item => visibleItems.add(item.index));
 
-    // Add all parents of search results to the visible set
     searchResults.forEach(item => {
         let parent = Object.values(originalItems).find(p => p.children?.includes(item.index));
         while (parent) {
@@ -79,12 +81,12 @@ function ArchiveFileSystem() {
 
     visibleItems.forEach(id => {
         const originalItem = originalItems[id];
-        // Only include children that are also in the visible set
-        const visibleChildren = originalItem.children?.filter(childId => visibleItems.has(childId)) || [];
-        resultTree[id] = { ...originalItem, children: visibleChildren };
+        if(originalItem) {
+          const visibleChildren = originalItem.children?.filter(childId => visibleItems.has(childId)) || [];
+          resultTree[id] = { ...originalItem, children: visibleChildren };
+        }
     });
 
-    // Determine the direct children of the root
     resultTree.root.children = Object.values(resultTree).filter(item => 
         item.index !== 'root' && 
         !Object.values(resultTree).some(parent => parent.children?.includes(item.index))
@@ -154,8 +156,6 @@ function ArchiveFileSystem() {
     );
   };
   
-  // --- FIX IS HERE ---
-  // Changed item type from MathTreeItem to the base TreeItem
   const handleContextMenu = (e: React.MouseEvent, item: TreeItem) => {
       e.preventDefault();
       const itemsForMenu = selectedItems.includes(item.index) ? selectedItems : [item.index];
@@ -182,7 +182,6 @@ function ArchiveFileSystem() {
         onExpandItem={(item) => setExpandedItems([...expandedItems, item.index])}
         onCollapseItem={(item) => setExpandedItems(expandedItems.filter(idx => idx !== item.index))}
         renderItemTitle={({ title, item }) => (
-          // The onContextMenu event now correctly matches the handleContextMenu function
           <div className="rct-tree-item-title" onContextMenu={(e) => handleContextMenu(e, item)}>
             {isSelectionModeActive && item.index !== 'root' && (
               <input
@@ -209,6 +208,8 @@ function ArchiveFileSystem() {
             <span className='archive-file-system-header-title'>{t('Archived Notebooks')}</span>
             {!contextMenu && renderHeaderButtons()}
         </div>
+        
+        {/* --- 3. ADD THE SEARCH INPUT --- */}
         <input
           type="text"
           placeholder="Search archive..."

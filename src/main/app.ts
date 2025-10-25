@@ -93,6 +93,7 @@ ipcMain.handle('get-archived-notebooks', async () => {
   return { root: items };
 });
 
+// This function is for single-item archiving
 ipcMain.handle('archive-item', async (event, itemPath) => {
   const userDataPath = app.getPath('userData');
   const archivePath = path.join(userDataPath, 'archive');
@@ -110,7 +111,30 @@ ipcMain.handle('archive-item', async (event, itemPath) => {
   }
 });
 
-// --- START: NEW CODE TO ADD ---
+// --- START: MODIFIED/NEW CODE ---
+
+// ✅ NEW: This function handles archiving MULTIPLE notebooks at once.
+ipcMain.handle('archive-notebooks', async (event, pathsToArchive: string[]) => {
+    const userDataPath = app.getPath('userData');
+    const archivePath = path.join(userDataPath, 'archive');
+    await fs.ensureDir(archivePath);
+    let successful = 0;
+    let failed = 0;
+
+    for (const itemPath of pathsToArchive) {
+        const itemName = path.basename(itemPath);
+        const newPath = path.join(archivePath, itemName);
+        try {
+            await fs.move(itemPath, newPath, { overwrite: true });
+            successful++;
+        } catch (error) {
+            console.error(`Failed to archive item: ${itemPath}`, error);
+            failed++;
+        }
+    }
+    return { successful, failed };
+});
+
 
 // This function handles restoring the archived files.
 ipcMain.handle('restore-archived-notebooks', async (event, pathsToRestore: string[]) => {
@@ -121,7 +145,6 @@ ipcMain.handle('restore-archived-notebooks', async (event, pathsToRestore: strin
   let failed = 0;
 
   for (const fullPath of pathsToRestore) {
-    // We get the base name to preserve folder structure
     const relativePath = path.basename(fullPath);
     const sourcePath = path.join(archivePath, relativePath);
     const destinationPath = path.join(notebooksPath, relativePath);
@@ -147,4 +170,4 @@ ipcMain.on('request-notebooks-refresh', () => {
     }
 });
 
-// --- END: NEW CODE TO ADD ---
+// --- END: MODIFIED/NEW CODE ---

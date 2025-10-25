@@ -54,6 +54,10 @@ const api = {
   // --- Functions from the original appPreload.tsx and our new additions ---
   getArchivedNotebooks: () => ipcRenderer.invoke('get-archived-notebooks'),
   archiveItem: (itemPath: string) => ipcRenderer.invoke('archive-item', itemPath),
+  
+  // ✅ NEW FUNCTION FOR MULTI-ARCHIVE
+  archiveNotebooks: (paths: string[]) => ipcRenderer.invoke('archive-notebooks', paths),
+
   restoreArchivedNotebooks: (paths: string[]) => ipcRenderer.invoke('restore-archived-notebooks', paths),
   requestNotebooksRefresh: () => ipcRenderer.send('request-notebooks-refresh'),
   onNotebooksRefresh: (callback: () => void) => {
