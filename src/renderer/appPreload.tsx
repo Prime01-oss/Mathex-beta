@@ -13,7 +13,7 @@ const api = {
       ipcRenderer.send(channel, data);
     }
   },
-  receive: (channel: string, func: (...args: any[]) => void) => {
+  receive: (channel: string, func: (...args: unknown[]) => void) => {
     const validChannels = [
       'gotLoadedDataX', 'Home', 'Picture', 'gotAllPictures', 'gotPicture',
       'Shortcuts', 'gotAllBlocks', 'openArchive', 'gotPageStyle', 'gotUserTheme',
@@ -65,7 +65,10 @@ const api = {
     return () => {
       ipcRenderer.removeListener('notebooks-need-refresh', callback);
     };
-  }
+  },
+
+  // <--- ADD THIS FUNCTION FOR THE CHAT BOT ---
+  getAIResponse: (prompt: string) => ipcRenderer.invoke('get-ai-response', prompt)
 };
 
 // Securely expose the single 'api' object to the renderer process

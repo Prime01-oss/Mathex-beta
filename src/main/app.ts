@@ -2,6 +2,15 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { createAppWindow } from './appWindow';
 import fs from 'fs-extra';
 import path from 'path';
+import fetch from 'node-fetch'; // This line is correct
+
+interface NotebookItem {
+  index: string;
+  data: string;
+  path: string;
+  children: string[];
+  isFolder: boolean;
+}
 
 /** Handle creating/removing shortcuts on Windows when installing/uninstalling. */
 if (require('electron-squirrel-startup')) {
@@ -9,40 +18,29 @@ if (require('electron-squirrel-startup')) {
 }
 
 /**
- * This method will be called when Electron has finished
- * initialization and is ready to create browser windows.
- * Some APIs can only be used after this event occurs.
+ * On 'ready', create the app window.
  */
 app.on('ready', createAppWindow);
 
 /**
- * Emitted when the application is activated. Various actions can
- * trigger this event, such as launching the application for the first time,
- * attempting to re-launch the application when it's already running,
- * or clicking on the application's dock or taskbar icon.
+ * On 'activate', re-create the window if none are open.
  */
 app.on('activate', () => {
-  /**
-   * On OS X it's common to re-create a window in the app when the
-   * dock icon is clicked and there are no other windows open.
-   */
   if (BrowserWindow.getAllWindows().length === 0) {
     createAppWindow();
   }
 });
 
 /**
- * Emitted when all windows have been closed.
+ * On 'window-all-closed', quit the app (except on macOS).
  */
 app.on('window-all-closed', () => {
-  /**
-   * On OS X it is common for applications and their menu bar
-   * to stay active until the user quits explicitly with Cmd + Q
-   */
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
+
+// --- Your Existing IPC Handlers ---
 
 ipcMain.on('new-file-request', () => {
   const window = BrowserWindow.getFocusedWindow();
@@ -56,7 +54,7 @@ ipcMain.handle('get-archived-notebooks', async () => {
   const archivePath = path.join(userDataPath, 'archive');
   await fs.ensureDir(archivePath);
 
-  const items: { [key: string]: any } = {
+  const items: { [key: string]: NotebookItem } = {
     root: {
       index: 'root',
       data: 'Archived',
@@ -93,7 +91,6 @@ ipcMain.handle('get-archived-notebooks', async () => {
   return { root: items };
 });
 
-// This function is for single-item archiving
 ipcMain.handle('archive-item', async (event, itemPath) => {
   const userDataPath = app.getPath('userData');
   const archivePath = path.join(userDataPath, 'archive');
@@ -111,9 +108,6 @@ ipcMain.handle('archive-item', async (event, itemPath) => {
   }
 });
 
-// --- START: MODIFIED/NEW CODE ---
-
-// ✅ NEW: This function handles archiving MULTIPLE notebooks at once.
 ipcMain.handle('archive-notebooks', async (event, pathsToArchive: string[]) => {
     const userDataPath = app.getPath('userData');
     const archivePath = path.join(userDataPath, 'archive');
@@ -135,8 +129,6 @@ ipcMain.handle('archive-notebooks', async (event, pathsToArchive: string[]) => {
     return { successful, failed };
 });
 
-
-// This function handles restoring the archived files.
 ipcMain.handle('restore-archived-notebooks', async (event, pathsToRestore: string[]) => {
   const userDataPath = app.getPath('userData');
   const notebooksPath = path.join(userDataPath, 'notebooks');
@@ -162,7 +154,6 @@ ipcMain.handle('restore-archived-notebooks', async (event, pathsToRestore: strin
   return { successful, failed };
 });
 
-// This function sends a message to the frontend to tell the main file list to refresh.
 ipcMain.on('request-notebooks-refresh', () => {
     const window = BrowserWindow.getFocusedWindow();
     if (window) {
@@ -170,4 +161,48 @@ ipcMain.on('request-notebooks-refresh', () => {
     }
 });
 
-// --- END: MODIFIED/NEW CODE ---
+// --- NEW CHAT BOT HANDLER (USING GOOGLE GEMINI API) ---
+
+ipcMain.handle('get-ai-response', async (event, prompt: string) => {
+  console.log('Main process received prompt:', prompt);
+
+  // --- ⬇️ PUT YOUR NEW, SECRET KEY HERE (INSIDE THE QUOTES) ⬇️ ---
+  const MY_GOOGLE_API_KEY = 'AIzaSyATkVhdvtwKqHHPotmZOOGlIbLSMylXT3Y';
+
+  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${MY_GOOGLE_API_KEY}`;
+
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response: any = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: `You are a helpful math assistant. All your answers should be formatted in Markdown. Now, answer this question: ${prompt}` }]
+          }
+        ]
+      })
+    });
+
+    if (!response.ok) {
+      const errorBody = await response.text();
+      console.error('Google API Error Body:', errorBody);
+      throw new Error(`API request failed with status ${response.status}`);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await response.json() as any;
+    
+    // Parse the Google Gemini response
+    const aiText = data.candidates[0].content.parts[0].text;
+    
+    return aiText; // This goes back to the 'await' in your .tsx file
+
+  } catch (error) {
+    console.error('Full AI API Error:', error);
+    throw new Error('Failed to get response from AI. Check your API key and network.');
+  }
+});

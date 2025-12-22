@@ -18,6 +18,7 @@ const ICON_MAP: Record<string, string> = {
   calculator: 'fi fi-rr-calculator',
   archive: 'fi fi-rr-archive',
   page: 'fi fi-rr-document',
+  brain: 'fi fi-rr-brain', // <--- THIS LINE IS CHANGED
 };
 
 const SidebarButton: React.FC<SidebarButtonProps> = ({ buttonType, state, title, icon, onClick }) => {

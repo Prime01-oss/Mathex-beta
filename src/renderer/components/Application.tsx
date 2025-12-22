@@ -7,13 +7,13 @@ import Header from './Header/Header';
 import Page from './Page/Page';
 import ChalkBoard from './ChalkBoard/ChalkBoard';
 import ShortcutsModal from './common/Modals/ShortcutsModal';
-// --- 1. IMPORT THE NEW POPUP CALCULATOR ---
 import PopupCalculator from './PopupCalculator/PopupCalculator';
-import ArchiveModal from './ArchiveModal/ArchiveModal'; // ADD THIS LINE
+import ArchiveModal from './ArchiveModal/ArchiveModal'; 
+import PopupChatBot from './PopupChatBot/PopupChatBot'; // <--- 1. ADD THIS IMPORT
 
 const AppContent = () => {
-  // --- 2. GET THE NEW STATE FROM THE CONTEXT ---
-  const { isChalkBoardOpen, isShortcutsModalOpen, isCalculatorOpen, isArchiveModalOpen } = useGeneralContext(); // ADD isArchiveModalOpen
+  // <--- 2. ADD isChatBotOpen HERE ---
+  const { isChalkBoardOpen, isShortcutsModalOpen, isCalculatorOpen, isArchiveModalOpen, isChatBotOpen } = useGeneralContext(); 
 
   return (
     <div id='main-app'>
@@ -23,15 +23,14 @@ const AppContent = () => {
         <FilesSidebar />
         <CommandBar />
         <Page />
-        {/* The old MathSidebar component is now completely removed from the layout */}
       </div>
 
       {/* Conditionally render all overlays */}
       {isChalkBoardOpen && <ChalkBoard />}
       {isShortcutsModalOpen && <ShortcutsModal />}
-      {/* --- 3. RENDER THE CALCULATOR WHEN ITS STATE IS TRUE --- */}
       {isCalculatorOpen && <PopupCalculator />}
-      {isArchiveModalOpen && <ArchiveModal />} {/* ADD THIS LINE */}
+      {isArchiveModalOpen && <ArchiveModal />} 
+      {isChatBotOpen && <PopupChatBot />} {/* <--- 3. ADD THIS LINE */}
     </div>
   );
 };

@@ -9,6 +9,7 @@ import { newWidgetRequest } from '@renderer/common/types';
 import i18n from '@common/i18n';
 import { Action, KBarProvider } from 'kbar';
 
+// ... (staticActions array is here) ...
 const staticActions: Action[] = [
   { id: 'preferences', name: 'Preferences' },
   { id: 'language', name: 'Language', parent: 'preferences' },
@@ -43,6 +44,7 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
   const [isChalkBoardOpen, setIsChalkBoardOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
+  const [isChatBotOpen, setIsChatBotOpen] = useState(false); // <--- 1. ADD THIS LINE
   const [isRtl, setIsRtl] = useState(true);
   const [language, setLanguage] = useState(getDefaultLang());
   const [currentOS, setCurrentOS] = useState('');
@@ -57,8 +59,7 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
     return localStorage.getItem('color') || 'blue';
   });
 
-  // --- 1. UPDATED setColor FUNCTION ---
-  // It now accepts an optional hue and handles 'black' as a special case.
+  // ... (setColor, setLang, isRtlLang, setTheme functions are here) ...
   const setColor = (name: string, hue?: number) => {
     localStorage.setItem('color', name);
     setColorTheme(name); // Sync React state
@@ -66,13 +67,10 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
     const rootStyle = document.documentElement.style;
 
     if (name === 'black') {
-      // For black, we remove the hue and set saturation and lightness directly.
-      // A very low lightness gives a dark charcoal/off-black color, which can be less harsh than pure #000.
       rootStyle.removeProperty('--theme-hue');
       rootStyle.setProperty('--theme-saturation', '0%');
-      rootStyle.setProperty('--theme-lightness-offset', '-35%'); // Make it much darker
+      rootStyle.setProperty('--theme-lightness-offset', '-35%'); 
     } else {
-      // For all other colors, we set the hue and restore default saturation/lightness.
       rootStyle.setProperty('--theme-hue', hue.toString());
       rootStyle.removeProperty('--theme-saturation');
       rootStyle.removeProperty('--theme-lightness-offset');
@@ -100,6 +98,7 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
     document.body.classList.toggle('dark-mode', isDark);
   };
 
+  // ... (dynamicActions mapping is here) ...
   const dynamicActions = staticActions.map(action => {
     const translatedAction = { ...action, name: i18n.t(action.name) };
     switch (action.id) {
@@ -111,30 +110,22 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
       case 'purple': return { ...translatedAction, perform: () => setColor('purple', 250) };
       case 'red': return { ...translatedAction, perform: () => setColor('red', 0) };
       case 'green': return { ...translatedAction, perform: () => setColor('green', 140) };
-      
-      // --- 2. UPDATED ACTION FOR BLACK ---
-      // It now calls setColor without a hue value.
       case 'black': return { ...translatedAction, perform: () => setColor('black') };
-
       case 'light': return { ...translatedAction, perform: () => setTheme(0) };
       case 'dark': return { ...translatedAction, perform: () => setTheme(1) };
       default: return translatedAction;
     }
   });
 
-  // This useEffect hook now correctly applies the theme on initial app load.
+  // ... (useEffect hooks are here) ...
   useEffect(() => {
-    // Apply dark mode and language direction
     setTheme(darkTheme ? 1 : 0);
     setLang(language);
-
-    // Apply the initial color theme
     const colorMap: { [key: string]: number | undefined } = {
       blue: 210, pink: 300, yellow: 35, purple: 250, red: 0, green: 140, black: undefined,
     };
     setColor(colorTheme, colorMap[colorTheme]);
-
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []); 
 
   useEffect(() => {
     window.api.getOS();
@@ -163,6 +154,7 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
         isChalkBoardOpen, setIsChalkBoardOpen,
         isCalculatorOpen, setIsCalculatorOpen,
         isArchiveModalOpen, setIsArchiveModalOpen,
+        isChatBotOpen, setIsChatBotOpen, // <--- 2. ADD THIS LINE
         searchQuery, setSearchQuery,
       }}
     >

@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next';
 
 const ToolsPanel = () => {
   const { t, i18n } = useTranslation();
+  // --- 1. REMOVE setIsChatBotOpen FROM HERE ---
   const { setNewWidgetRequest, setClearPageRequest, setSaveRequest } = useGeneralContext();
 
   const handleOnClickTool = (widgetType: WidgetType) => {
@@ -54,6 +55,9 @@ const ToolsPanel = () => {
           icon='pencil'
           onClick={() => handleOnClickTool(WidgetType.Draw)}
         />
+        
+        {/* --- 2. THE CHAT BOT BUTTON IS REMOVED FROM HERE --- */}
+        
         {/* <Tool title='הוספת קבוצה' buttonType='addGroupBlock' icon='apps-add' /> */}
         <Tool
           title={t("Divider")}
