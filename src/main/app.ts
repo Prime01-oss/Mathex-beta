@@ -1,16 +1,11 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { createAppWindow } from './appWindow';
+// [NOTE] fs and path were only used for archiving in this file. 
+// You can remove them if no other logic uses them, but I've kept them 
+// available just in case you add other file operations later.
 import fs from 'fs-extra';
 import path from 'path';
 import fetch from 'node-fetch';
-
-interface NotebookItem {
-  index: string;
-  data: string;
-  path: string;
-  children: string[];
-  isFolder: boolean;
-}
 
 /** Handle creating/removing shortcuts on Windows when installing/uninstalling. */
 if (require('electron-squirrel-startup')) {
@@ -49,110 +44,7 @@ ipcMain.on('new-file-request', () => {
   }
 });
 
-ipcMain.handle('get-archived-notebooks', async () => {
-  const userDataPath = app.getPath('userData');
-  const archivePath = path.join(userDataPath, 'archive');
-  await fs.ensureDir(archivePath);
-
-  const items: { [key: string]: NotebookItem } = {
-    root: {
-      index: 'root',
-      data: 'Archived',
-      path: archivePath,
-      children: [] as string[],
-      isFolder: true,
-    },
-  };
-
-  try {
-    const files = await fs.readdir(archivePath);
-    for (const file of files) {
-      const filePath = path.join(archivePath, file);
-      const stats = await fs.stat(filePath);
-      const isFolder = stats.isDirectory();
-      const fileExt = isFolder ? '' : path.extname(filePath);
-      const fileName = path.basename(filePath, fileExt);
-
-      const item = {
-        index: filePath,
-        data: fileName,
-        path: filePath,
-        isFolder: isFolder,
-        children: [] as string[],
-      };
-
-      items[filePath] = item;
-      (items.root.children as string[]).push(filePath);
-    }
-  } catch (error) {
-    console.error('Error reading archive directory:', error);
-  }
-
-  return { root: items };
-});
-
-ipcMain.handle('archive-item', async (event, itemPath) => {
-  const userDataPath = app.getPath('userData');
-  const archivePath = path.join(userDataPath, 'archive');
-  await fs.ensureDir(archivePath);
-
-  const itemName = path.basename(itemPath);
-  const newPath = path.join(archivePath, itemName);
-
-  try {
-    await fs.move(itemPath, newPath, { overwrite: true });
-    return { success: true, path: newPath };
-  } catch (error) {
-    console.error('Failed to archive item:', error);
-    return { success: false, error: error.message };
-  }
-});
-
-ipcMain.handle('archive-notebooks', async (event, pathsToArchive: string[]) => {
-  const userDataPath = app.getPath('userData');
-  const archivePath = path.join(userDataPath, 'archive');
-  await fs.ensureDir(archivePath);
-  let successful = 0;
-  let failed = 0;
-
-  for (const itemPath of pathsToArchive) {
-    const itemName = path.basename(itemPath);
-    const newPath = path.join(archivePath, itemName);
-    try {
-      await fs.move(itemPath, newPath, { overwrite: true });
-      successful++;
-    } catch (error) {
-      console.error(`Failed to archive item: ${itemPath}`, error);
-      failed++;
-    }
-  }
-  return { successful, failed };
-});
-
-ipcMain.handle('restore-archived-notebooks', async (event, pathsToRestore: string[]) => {
-  const userDataPath = app.getPath('userData');
-  const notebooksPath = path.join(userDataPath, 'notebooks');
-  const archivePath = path.join(userDataPath, 'archive');
-  let successful = 0;
-  let failed = 0;
-
-  for (const fullPath of pathsToRestore) {
-    const relativePath = path.basename(fullPath);
-    const sourcePath = path.join(archivePath, relativePath);
-    const destinationPath = path.join(notebooksPath, relativePath);
-
-    try {
-      await fs.ensureDir(path.dirname(destinationPath));
-      await fs.move(sourcePath, destinationPath);
-      successful++;
-    } catch (err) {
-      console.error(`Failed to restore: ${relativePath}`, err);
-      failed++;
-    }
-  }
-
-  return { successful, failed };
-});
+// [REMOVED] Archive-related IPC handlers were here.
 
 ipcMain.on('request-notebooks-refresh', () => {
   const window = BrowserWindow.getFocusedWindow();

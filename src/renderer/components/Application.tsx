@@ -8,12 +8,11 @@ import Page from './Page/Page';
 import ChalkBoard from './ChalkBoard/ChalkBoard';
 import ShortcutsModal from './common/Modals/ShortcutsModal';
 import PopupCalculator from './PopupCalculator/PopupCalculator';
-import ArchiveModal from './ArchiveModal/ArchiveModal'; 
 import PopupChatBot from './PopupChatBot/PopupChatBot'; // <--- 1. ADD THIS IMPORT
 
 const AppContent = () => {
   // <--- 2. ADD isChatBotOpen HERE ---
-  const { isChalkBoardOpen, isShortcutsModalOpen, isCalculatorOpen, isArchiveModalOpen, isChatBotOpen } = useGeneralContext(); 
+  const { isChalkBoardOpen, isShortcutsModalOpen, isCalculatorOpen, isChatBotOpen } = useGeneralContext(); 
 
   return (
     <div id='main-app'>
@@ -29,7 +28,6 @@ const AppContent = () => {
       {isChalkBoardOpen && <ChalkBoard />}
       {isShortcutsModalOpen && <ShortcutsModal />}
       {isCalculatorOpen && <PopupCalculator />}
-      {isArchiveModalOpen && <ArchiveModal />} 
       {isChatBotOpen && <PopupChatBot />} {/* <--- 3. ADD THIS LINE */}
     </div>
   );

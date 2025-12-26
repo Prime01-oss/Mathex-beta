@@ -26,9 +26,7 @@ import {
 } from './FileSystemHelpers';
 import { MathTreeItem, TreeItemsObj } from './types';
 import { useTranslation } from 'react-i18next';
-import ContextMenu from './ContextMenu';
-import { ArchiveActionsPopup } from './ArchiveActionsPopup';
-// [ADDED] Import Search component
+// REMOVED: ContextMenu and ArchiveActionsPopup imports
 import Search from '../Header/SearchBar';
 
 type receivedProps = { filesPath: string; root: SetStateAction<TreeItemsObj> };
@@ -37,9 +35,9 @@ declare global {
     api: any;
   }
 }
+
 function FileSystem() {
   const { t } = useTranslation();
-  // [ADDED] Destructure searchQuery for filtering
   const { setSelectedFile, searchQuery } = useGeneralContext();
 
   const [items, setItems] = useState<TreeItemsObj>({
@@ -54,13 +52,10 @@ function FileSystem() {
   const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [expandedItems, setExpandedItems] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
-  const [selectedDirectory, setSelectedDirectory] =
-    useState<TreeItemIndex>('root');
+  const [selectedDirectory, setSelectedDirectory] = useState<TreeItemIndex>('root');
   const [focusedItem, setFocusedItem] = useState<TreeItemIndex>(-1);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: TreeItemIndex } | null>(null);
   
-  const [isArchiveModeActive, setArchiveModeActive] = useState(false);
-  const [archiveSelection, setArchiveSelection] = useState<TreeItemIndex[]>([]);
+  // REMOVED: contextMenu, isArchiveModeActive, archiveSelection states
 
   const fetchNotebooks = useCallback(() => {
     window.api.getNotebooks();
@@ -86,7 +81,7 @@ function FileSystem() {
     };
   }, [fetchNotebooks]);
 
-  // [ADDED] Search Logic: Filter items based on searchQuery
+  // Search Logic
   const displayedItems = useMemo(() => {
     if (!searchQuery) return items;
 
@@ -182,6 +177,10 @@ function FileSystem() {
   };
 
   const handleRenameItem = (item: MathTreeItem, name: string): void => {
+    // Determine directory name safely handling both slash types
+    const lastSeparatorIndex = Math.max(item.path.lastIndexOf('/'), item.path.lastIndexOf('\\'));
+    const dirName = lastSeparatorIndex !== -1 ? item.path.slice(0, lastSeparatorIndex + 1) : '';
+
     if (
       itemExistsInParent(
         name,
@@ -194,22 +193,16 @@ function FileSystem() {
       setErrorModalOpen(true);
     } else {
       setItems((prev) => {
-        let newPath: string;
+        // Construct new path safely
+        const newPath = item.isFolder 
+            ? `${dirName}${name}` 
+            : `${dirName}${name}.json`;
+            
         const oldPath = item.index;
-
-        if (item.isFolder) {
-          const split = item.path.split('\\');
-          split.pop();
-          split.push(name);
-          newPath = split.join('\\');
-        } else {
-          const index = item.path.length - (item.data + '.json').length;
-          const dirName = item.path.slice(0, index);
-          newPath = dirName + name + '.json';
-        }
 
         let newItems = { ...prev };
 
+        // Calls the FIXED changeItemPath which now updates 'data'
         newItems = changeItemPath(newItems, item, newPath);
 
         for (const [, value] of Object.entries(newItems)) {
@@ -260,133 +253,7 @@ function FileSystem() {
     }
   };
 
-  const handleArchiveItem = async () => {
-    if (!contextMenu) return;
-    const itemToArchive = items[contextMenu.item];
-    if (!itemToArchive) return;
-
-    const result = await window.api.archiveItem(itemToArchive.path);
-    if (result.success) {
-      setItems(prev => {
-        const newItems = { ...prev };
-        const itemToDelete = contextMenu.item;
-
-        const parent = getParent(newItems, itemToDelete);
-        if (parent) {
-          newItems[parent.index] = {
-            ...parent,
-            children: parent.children.filter(child => child !== itemToDelete),
-          };
-        }
-
-        const itemsToDelete = [itemToDelete];
-        const queue = [...(newItems[itemToDelete]?.children ?? [])];
-        while (queue.length > 0) {
-          const currentItem = queue.shift();
-          if (currentItem) {
-            itemsToDelete.push(currentItem);
-            const children = newItems[currentItem]?.children;
-            if (children) {
-              queue.push(...children);
-            }
-          }
-        }
-        
-        for (const item of itemsToDelete) {
-            delete newItems[item];
-        }
-
-        return newItems;
-      });
-      window.api.requestNotebooksRefresh(); 
-    }
-    setContextMenu(null);
-  };
-
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if(isArchiveModeActive) return; 
-
-    const target = e.target as HTMLElement;
-    const itemElement = target.closest('[data-rct-item-id]');
-    if (itemElement) {
-        const itemId = itemElement.getAttribute('data-rct-item-id');
-        if (itemId && itemId !== 'root') {
-            setContextMenu({
-                x: e.clientX,
-                y: e.clientY,
-                item: itemId,
-            });
-        }
-    }
-  };
-
-  const toggleArchiveSelectItem = (itemId: TreeItemIndex) => {
-    setArchiveSelection(prev =>
-      prev.includes(itemId)
-        ? prev.filter(id => id !== itemId)
-        : [...prev, itemId]
-    );
-  };
-
-  const handleCancelArchiveMode = () => {
-    setArchiveModeActive(false);
-    setArchiveSelection([]);
-  };
-
-  const handleArchiveSelectAll = () => {
-    const allItemIds = Object.keys(items).filter(id => id !== 'root');
-    setArchiveSelection(allItemIds);
-  };
-
-  const handleArchiveConfirm = async () => {
-    if (archiveSelection.length === 0) return;
-
-    const pathsToArchive = archiveSelection.map(id => items[id]?.path).filter(Boolean);
-    if (pathsToArchive.length === 0) return;
-
-    const result = await window.api.archiveNotebooks(pathsToArchive); 
-
-    if (result.success) {
-      setItems(prev => {
-        const newItems = { ...prev };
-        const allItemsToDelete = new Set<TreeItemIndex>();
-
-        archiveSelection.forEach(itemToArchiveId => {
-          if (!newItems[itemToArchiveId]) return;
-
-          const parent = getParent(newItems, itemToArchiveId);
-          if (parent) {
-            newItems[parent.index] = {
-              ...parent,
-              children: parent.children.filter(child => child !== itemToArchiveId),
-            };
-          }
-
-          const queue = [itemToArchiveId];
-          while (queue.length > 0) {
-            const currentItem = queue.shift();
-            if (currentItem) {
-              allItemsToDelete.add(currentItem);
-              const children = newItems[currentItem]?.children;
-              if (children) {
-                queue.push(...children);
-              }
-            }
-          }
-        });
-
-        allItemsToDelete.forEach(id => {
-          delete newItems[id];
-        });
-
-        return newItems;
-      });
-
-      window.api.requestNotebooksRefresh(); 
-    }
-    handleCancelArchiveMode();
-  };
+  // REMOVED: handleArchiveItem, handleContextMenu, toggleArchiveSelectItem, handleCancelArchiveMode, handleArchiveSelectAll, handleArchiveConfirm
 
   return (
     <div className='file-system' onKeyUp={handleDeleteItem}>
@@ -399,38 +266,27 @@ function FileSystem() {
           {t('My Notebooks')}
         </span>
         <div className='file-system-header-buttons'>
-          {!isArchiveModeActive ? (
-            <>
-              <button onClick={() => setArchiveModeActive(true)} data-tooltip={t('Archive Items')}>
-                <i className='fi fi-rr-archive' />
-              </button>
-              <button onClick={addFolder} data-tooltip={t('New Folder')}>
-                <i className='fi fi-rr-add-folder' />
-              </button>
-              <button onClick={addFile} data-tooltip={t('New File')}>
-                <i className='fi-rr-add-document' />
-              </button>
-            </>
-          ) : (
-            <button onClick={handleCancelArchiveMode} data-tooltip={t('Cancel')}>
-               <i className='fi fi-rr-cross-small' />
-            </button>
-          )}
+          {/* REMOVED: Archive Toggle Button */}
+          <button onClick={addFolder} data-tooltip={t('New Folder')}>
+            <i className='fi fi-rr-add-folder' />
+          </button>
+          <button onClick={addFile} data-tooltip={t('New File')}>
+            <i className='fi-rr-add-document' />
+          </button>
         </div>
       </div>
       
-      {/* [ADDED] Search Bar placed here */}
-      <div style={{ padding: '0 10px 10px 10px' }}>
+      <div>
           <Search />
       </div>
 
-      <div className='files-tree-container' onClick={handleClickedOutsideItem} onContextMenu={handleContextMenu}>
+      <div className='files-tree-container' onClick={handleClickedOutsideItem}>
         <ControlledTreeEnvironment
-          items={displayedItems} // [CHANGED] Use displayedItems for filtering
-          canDragAndDrop={!isArchiveModeActive && !searchQuery}
-          canReorderItems={!isArchiveModeActive && !searchQuery}
-          canDropOnFolder={!isArchiveModeActive}
-          canDropOnNonFolder={!isArchiveModeActive}
+          items={displayedItems}
+          canDragAndDrop={!searchQuery}
+          canReorderItems={!searchQuery}
+          canDropOnFolder={true}
+          canDropOnNonFolder={true}
           getItemTitle={(item) => item.data}
           canSearch={false}
           keyboardBindings={{ renameItem: ['shift+R'] }}
@@ -438,18 +294,17 @@ function FileSystem() {
             ['fileSystem']: {
               focusedItem,
               expandedItems,
-              selectedItems: isArchiveModeActive ? [] : selectedItems, 
+              selectedItems: selectedItems, 
             },
           }}
           onDrop={handleOnDrop}
           onFocusItem={(item) => {
             const mathTreeItem = item as MathTreeItem;
             setFocusedItem(mathTreeItem.index);
-            if (!isArchiveModeActive) {
-              item.isFolder
-                ? setSelectedDirectory(mathTreeItem.index)
-                : setSelectedFile(mathTreeItem.path);
-            }
+            // Directly set selection as archive mode is gone
+            item.isFolder
+              ? setSelectedDirectory(mathTreeItem.index)
+              : setSelectedFile(mathTreeItem.path);
           }}
           onExpandItem={(item) =>
             setExpandedItems([...expandedItems, item.index])
@@ -461,19 +316,11 @@ function FileSystem() {
               ),
             )
           }
-          onSelectItems={isArchiveModeActive ? () => {} : setSelectedItems}
+          onSelectItems={setSelectedItems}
           onRenameItem={handleRenameItem}
-          renderItemTitle={({ title, item }) => (
+          renderItemTitle={({ title }) => (
             <div className="rct-tree-item-title">
-              {isArchiveModeActive && item.index !== 'root' && (
-                <input
-                  type="checkbox"
-                  className="item-checkbox"
-                  checked={archiveSelection.includes(item.index)}
-                  onChange={() => toggleArchiveSelectItem(item.index)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-              )}
+              {/* REMOVED: Checkbox logic */}
               {title}
             </div>
           )}
@@ -498,23 +345,7 @@ function FileSystem() {
         {errorModalContent}
       </ErrorModal>
 
-      {contextMenu && (
-        <ContextMenu
-            x={contextMenu.x}
-            y={contextMenu.y}
-            onArchive={handleArchiveItem}
-            onClose={() => setContextMenu(null)}
-        />
-      )}
-
-      {isArchiveModeActive && (
-        <ArchiveActionsPopup
-          selectionCount={archiveSelection.length}
-          onSelectAll={handleArchiveSelectAll}
-          onArchive={handleArchiveConfirm}
-          onCancel={handleCancelArchiveMode}
-        />
-      )}
+      {/* REMOVED: ContextMenu and ArchiveActionsPopup rendering */}
     </div>
   );
 }

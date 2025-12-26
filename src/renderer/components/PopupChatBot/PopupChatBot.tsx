@@ -19,7 +19,7 @@ const PopupChatBot: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     { 
       sender: 'ai', 
-      text: "Hello! I am your Math Buddy. You can write equations using LaTeX (e.g., $E=mc^2$). How can I help?",
+      text: "Hello! I am your Math Buddy. How can I help?",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);

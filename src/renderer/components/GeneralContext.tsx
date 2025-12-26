@@ -43,7 +43,6 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [isChalkBoardOpen, setIsChalkBoardOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
-  const [isArchiveModalOpen, setIsArchiveModalOpen] = useState(false);
   const [isChatBotOpen, setIsChatBotOpen] = useState(false); // <--- 1. ADD THIS LINE
   const [isRtl, setIsRtl] = useState(true);
   const [language, setLanguage] = useState(getDefaultLang());
@@ -153,7 +152,6 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
         isShortcutsModalOpen, setIsShortcutsModalOpen,
         isChalkBoardOpen, setIsChalkBoardOpen,
         isCalculatorOpen, setIsCalculatorOpen,
-        isArchiveModalOpen, setIsArchiveModalOpen,
         isChatBotOpen, setIsChatBotOpen, // <--- 2. ADD THIS LINE
         searchQuery, setSearchQuery,
       }}

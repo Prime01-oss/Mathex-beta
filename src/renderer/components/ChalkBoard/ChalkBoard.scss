@@ -1,33 +1,113 @@
+@import '../Theme.scss';
+
 .chalk-board-overlay {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  background-color: var(--app-bgcolor); /* Sets the correct greyish background */
-  z-index: 500;
+  width: 100%;
+  height: 100%;
+  
+  /* 1. Add Padding for the "Furnished" Look */
+  padding: 25px 35px; 
+  box-sizing: border-box;
+  
+  /* Background behind the floating board */
+  background-color: var(--math-block-bgcolor); 
+  
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 50;
+  
+  /* Smooth Fade In */
+  animation: fadeIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.chalk-board-overlay .close-button {
-  position: absolute;
-  top: 20px;
-  right: 25px;
-  background: none;
-  border: none;
-  color: var(--tool-color);
-  font-size: 2rem;
-  cursor: pointer;
-  z-index: 1000; /* Keep it on top of the drawing canvas */
-  transition: color 0.2s ease;
+.draw-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  
+  /* 2. The Premium "Card" Look */
+  background-color: #fff; 
+  border-radius: 16px; 
+  overflow: hidden; 
+  
+  /* Deep shadow */
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 
+              0 0 0 1px var(--app-border-color);
 
-  &:hover {
-    color: var(--erwt-heading-color);
+  /* --- TLDRAW V1 UI FILTERING --- */
+  /* Note: V1 classes often use 'tl-' prefix but structure is different */
+
+  /* Hide Top Panel (Menu, Title, People, etc.) */
+  .tl-top-panel {
+    display: none !important;
+  }
+  
+  /* Hide Bottom Left Zoom/Pages Controls */
+  .tl-zoom-panel, .tl-page-panel {
+    display: none !important;
+  }
+
+  /* --- CUSTOMIZE THE TOOLBAR (V1) --- */
+  .tl-primary-tools {
+    /* Style the toolbar container */
+    background-color: var(--tool-bgcolor) !important;
+    border: 1px solid var(--app-border-color) !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08) !important;
+    
+    /* In V1, the toolbar is often a flex container. 
+       We target children by aria-label or data-testid to hide them. */
+    
+    /* Hide Select (Cursor) Tool */
+    [aria-label="Select"], [data-testid="Select"] {
+      display: none !important;
+    }
+
+    /* Hide Shapes, Arrows, Text, etc. */
+    [aria-label="Rectangle"], [data-testid="Rectangle"],
+    [aria-label="Ellipse"], [data-testid="Ellipse"],
+    [aria-label="Triangle"], [data-testid="Triangle"],
+    [aria-label="Line"], [data-testid="Line"],
+    [aria-label="Arrow"], [data-testid="Arrow"],
+    [aria-label="Text"], [data-testid="Text"],
+    [aria-label="Sticky"], [data-testid="Sticky"],
+    [aria-label="Asset"], [data-testid="Asset"] {
+      display: none !important;
+    }
+  }
+
+  /* Style the Remaining Buttons (Pen & Eraser) */
+  .tl-primary-tools > button {
+    color: var(--tool-color) !important;
+    border-radius: 8px !important;
+    margin: 2px !important;
+    
+    &:hover {
+      background-color: var(--tool-hover-bgcolor) !important;
+    }
+    
+    /* Active State (V1 often uses a generic active class or attribute) */
+    &[data-state="active"], &[aria-pressed="true"] {
+      background-color: var(--app-accent-color) !important;
+      color: white !important;
+    }
+  }
+
+  /* --- STYLE PANEL (Colors) --- */
+  /* Ensure the style panel (where colors are) is visible */
+  .tl-style-panel {
+    background-color: var(--tool-bgcolor) !important;
+    border: 1px solid var(--app-border-color) !important;
+    border-radius: 12px !important;
+    /* Move it up slightly to clear the padding if needed */
+    bottom: 80px !important; 
   }
 }
 
-.chalk-board-overlay .draw-container {
-  /* These rules make the drawing canvas fill the entire screen */
-  width: 100%;
-  height: 100%;
-  position: relative; 
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
 }

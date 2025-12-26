@@ -69,7 +69,7 @@ ipcMain.on('getOS', () => {
     case "linux":
       OS = "linux"
       break;
-  
+
     default:
       break;
   }
@@ -173,10 +173,16 @@ function buildTree(dir: string, root: any) {
 
 ipcMain.on('getNotebooks', () => {
   const filesPath = path.join(app.getPath('documents'), 'mathex', 'files');
+  const welcomeFilePath = path.join(filesPath, "Welcome to mathex!.json");
 
+  // 1. Ensure the directory exists
   if (!fs.existsSync(filesPath)) {
-    fs.mkdirSync(filesPath, {recursive: true});
-    fs.writeFileSync(path.join(filesPath, "Welcome to mathex!.json"), JSON.stringify(onboardingContent))
+    fs.mkdirSync(filesPath, { recursive: true });
+  }
+
+  // 2. Check specifically if the Welcome file exists. If not, create it.
+  if (!fs.existsSync(welcomeFilePath)) {
+    fs.writeFileSync(welcomeFilePath, JSON.stringify(onboardingContent));
   }
 
   const root = {};
@@ -256,9 +262,9 @@ ipcMain.on('getArchive', () => {
       }
       return false;
     });
-   return unique.map(
-     (groupTitle) => (groupTitle = { groupName: groupTitle, subGroups: [] as any[] }),
-   );
+    return unique.map(
+      (groupTitle) => (groupTitle = { groupName: groupTitle, subGroups: [] as any[] }),
+    );
 
   }
 

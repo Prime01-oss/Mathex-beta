@@ -15,7 +15,6 @@ const FilesSidebar: React.FC = () => {
     setIsChalkBoardOpen,
     setIsShortcutsModalOpen,
     setIsCalculatorOpen,
-    setIsArchiveModalOpen,
     setIsChatBotOpen, // <--- 1. ADD THIS LINE
   } = useGeneralContext();
 
@@ -63,15 +62,9 @@ const FilesSidebar: React.FC = () => {
             title={t('Math Buddy')}
             buttonType='chatBot'
             icon='brain' //
-            onClick={() => setIsChatBotOpen(true)}
+            onClick={() => setIsChatBotOpen((prev: boolean) => !prev)}
           />
 
-          <SidebarButton
-            title={t('Archive')}
-            buttonType='archive'
-            icon='archive'
-            onClick={() => setIsArchiveModalOpen((prev: boolean) => !prev)}
-          />
         </section>
       </div>
 

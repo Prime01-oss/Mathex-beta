@@ -7,6 +7,7 @@ import {
 } from 'react-complex-tree';
 import { TreeItemsObj, MathTreeItem } from './types';
 
+// ... (keep draggedToTheSameParent as is) ...
 export const draggedToTheSameParent = (
   prev: TreeItemsObj,
   item: TreeItem,
@@ -23,30 +24,46 @@ export const draggedToTheSameParent = (
   return draggedToSameParent;
 };
 
+// --- FIX STARTS HERE ---
+export const getFileNameFromPath = (path: string) => {
+  // robustly split by "/" or "\" to get the filename
+  const fileNameWithExt = path.split(/[/\\]/).pop() || '';
+  // Remove .json extension if present
+  return fileNameWithExt.replace('.json', '');
+}
+
 export const changeItemPath = (prev: TreeItemsObj, item: MathTreeItem, newPath: string) => { 
   const oldPath = item.path;
 
-  window.api.move(oldPath, newPath)
+  window.api.move(oldPath, newPath);
 
   const { [oldPath]: _, ...rest } = prev;
   
+  // Calculate the new display name
+  const newData = getFileNameFromPath(newPath);
+
   const newState = {
     ...rest,
     [newPath]: {
       ...item,
       index: newPath,
       path: newPath,
+      data: newData, // <--- CRITICAL FIX: Update the display name
     },
   }
 
   return newState;
 };
+// --- FIX ENDS HERE ---
+
+// ... (Keep the rest of the file: addItemToNewParent, updateItemsPosition, etc. exactly as they were) ...
 
 export const addItemToNewParent = (
   target: DraggingPositionItem | DraggingPositionBetweenItems,
   prev: TreeItemsObj,
   item: MathTreeItem,
 ) => {
+  // ... (existing code) ...
   if (target.targetType != 'item') {
     const newPath = prev[target.parentItem].path +
     '\\' +
@@ -200,11 +217,6 @@ export function itemExistsInParent(
   }
 
   return false; // did not find a matching item
-}
-
-export const getFileNameFromPath = (path: string) => {
-  // TODO: format \\ and / correctly
-  return path.split('\\').pop().split('.')[0];
 }
 
 export const getParent = (items: TreeItemsObj, childIndex: TreeItemIndex) => {
