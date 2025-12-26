@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import { createAppWindow } from './appWindow';
 import fs from 'fs-extra';
 import path from 'path';
-import fetch from 'node-fetch'; // This line is correct
+import fetch from 'node-fetch';
 
 interface NotebookItem {
   index: string;
@@ -109,24 +109,24 @@ ipcMain.handle('archive-item', async (event, itemPath) => {
 });
 
 ipcMain.handle('archive-notebooks', async (event, pathsToArchive: string[]) => {
-    const userDataPath = app.getPath('userData');
-    const archivePath = path.join(userDataPath, 'archive');
-    await fs.ensureDir(archivePath);
-    let successful = 0;
-    let failed = 0;
+  const userDataPath = app.getPath('userData');
+  const archivePath = path.join(userDataPath, 'archive');
+  await fs.ensureDir(archivePath);
+  let successful = 0;
+  let failed = 0;
 
-    for (const itemPath of pathsToArchive) {
-        const itemName = path.basename(itemPath);
-        const newPath = path.join(archivePath, itemName);
-        try {
-            await fs.move(itemPath, newPath, { overwrite: true });
-            successful++;
-        } catch (error) {
-            console.error(`Failed to archive item: ${itemPath}`, error);
-            failed++;
-        }
+  for (const itemPath of pathsToArchive) {
+    const itemName = path.basename(itemPath);
+    const newPath = path.join(archivePath, itemName);
+    try {
+      await fs.move(itemPath, newPath, { overwrite: true });
+      successful++;
+    } catch (error) {
+      console.error(`Failed to archive item: ${itemPath}`, error);
+      failed++;
     }
-    return { successful, failed };
+  }
+  return { successful, failed };
 });
 
 ipcMain.handle('restore-archived-notebooks', async (event, pathsToRestore: string[]) => {
@@ -150,59 +150,62 @@ ipcMain.handle('restore-archived-notebooks', async (event, pathsToRestore: strin
       failed++;
     }
   }
-  
+
   return { successful, failed };
 });
 
 ipcMain.on('request-notebooks-refresh', () => {
-    const window = BrowserWindow.getFocusedWindow();
-    if (window) {
-        window.webContents.send('notebooks-need-refresh');
-    }
+  const window = BrowserWindow.getFocusedWindow();
+  if (window) {
+    window.webContents.send('notebooks-need-refresh');
+  }
 });
 
-// --- NEW CHAT BOT HANDLER (USING GOOGLE GEMINI API) ---
+// --- NEW CHAT BOT HANDLER (USING LOCAL OLLAMA - PHI3) ---
 
 ipcMain.handle('get-ai-response', async (event, prompt: string) => {
   console.log('Main process received prompt:', prompt);
 
-  // --- ⬇️ PUT YOUR NEW, SECRET KEY HERE (INSIDE THE QUOTES) ⬇️ ---
-  const MY_GOOGLE_API_KEY = 'AIzaSyATkVhdvtwKqHHPotmZOOGlIbLSMylXT3Y';
+  // 1. Point to your local Ollama instance
+  const OLLAMA_URL = 'http://localhost:11434/api/generate';
 
-  const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${MY_GOOGLE_API_KEY}`;
+  // 2. Define the model as 'phi3'
+  const MODEL_NAME = 'phi3';
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response: any = await fetch(API_URL, {
+    const response: any = await fetch(OLLAMA_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+
       body: JSON.stringify({
-        contents: [
-          {
-            parts: [{ text: `You are a helpful math assistant. All your answers should be formatted in Markdown. Now, answer this question: ${prompt}` }]
-          }
-        ]
+        model: MODEL_NAME,
+        prompt: `You are a helpful math assistant.
+                  Format Instructions:
+                  1. Use Markdown for text.
+                  2. Use LaTeX for ALL math equations.
+                  3. Wrap inline math in single dollar signs, e.g., $x^2$.
+                  4. Wrap block math in double dollar signs, e.g., $$ \\int x dx $$.
+  
+  Question: ${prompt}`,
+        stream: false
       })
     });
 
     if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('Google API Error Body:', errorBody);
-      throw new Error(`API request failed with status ${response.status}`);
+      throw new Error(`Ollama connection failed: ${response.statusText}`);
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await response.json() as any;
-    
-    // Parse the Google Gemini response
-    const aiText = data.candidates[0].content.parts[0].text;
-    
-    return aiText; // This goes back to the 'await' in your .tsx file
+
+    // 3. Ollama returns the text in a 'response' field
+    return data.response;
 
   } catch (error) {
-    console.error('Full AI API Error:', error);
-    throw new Error('Failed to get response from AI. Check your API key and network.');
+    console.error('Local LLM Error:', error);
+    return "Error: Could not connect to Math Buddy. Is Ollama running? (Try running 'ollama serve' in your terminal)";
   }
 });

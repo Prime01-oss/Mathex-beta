@@ -1,7 +1,7 @@
 /* eslint-disable import/named */
 import ErrorModal from '@components/common/Modals/ErrorModal';
 import { useGeneralContext } from '@components/GeneralContext';
-import React, { SetStateAction, useEffect, useState, useCallback } from 'react';
+import React, { SetStateAction, useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Tree,
   ControlledTreeEnvironment,
@@ -27,8 +27,9 @@ import {
 import { MathTreeItem, TreeItemsObj } from './types';
 import { useTranslation } from 'react-i18next';
 import ContextMenu from './ContextMenu';
-// --- 1. IMPORT THE POPUP ---
 import { ArchiveActionsPopup } from './ArchiveActionsPopup';
+// [ADDED] Import Search component
+import Search from '../Header/SearchBar';
 
 type receivedProps = { filesPath: string; root: SetStateAction<TreeItemsObj> };
 declare global {
@@ -38,7 +39,8 @@ declare global {
 }
 function FileSystem() {
   const { t } = useTranslation();
-  const { setSelectedFile } = useGeneralContext();
+  // [ADDED] Destructure searchQuery for filtering
+  const { setSelectedFile, searchQuery } = useGeneralContext();
 
   const [items, setItems] = useState<TreeItemsObj>({
     root: {
@@ -57,7 +59,6 @@ function FileSystem() {
   const [focusedItem, setFocusedItem] = useState<TreeItemIndex>(-1);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: TreeItemIndex } | null>(null);
   
-  // --- 2. ADD STATE FOR ARCHIVE MODE ---
   const [isArchiveModeActive, setArchiveModeActive] = useState(false);
   const [archiveSelection, setArchiveSelection] = useState<TreeItemIndex[]>([]);
 
@@ -84,6 +85,49 @@ function FileSystem() {
         cleanup();
     };
   }, [fetchNotebooks]);
+
+  // [ADDED] Search Logic: Filter items based on searchQuery
+  const displayedItems = useMemo(() => {
+    if (!searchQuery) return items;
+
+    const lowerQuery = searchQuery.toLowerCase();
+    const includedIds = new Set<string>();
+
+    const traverse = (itemId: string): boolean => {
+      const item = items[itemId];
+      if (!item) return false;
+
+      let hasMatchingChild = false;
+      if (item.children) {
+        item.children.forEach((childId) => {
+           if (traverse(childId as string)) {
+             hasMatchingChild = true;
+           }
+        });
+      }
+
+      const matches = item.data.toLowerCase().includes(lowerQuery);
+      const shouldKeep = matches || hasMatchingChild || itemId === 'root';
+
+      if (shouldKeep) {
+        includedIds.add(itemId);
+      }
+      return shouldKeep;
+    };
+
+    traverse('root');
+
+    const newItems: TreeItemsObj = {};
+    includedIds.forEach(id => {
+      const original = items[id];
+      const newChildren = original.children
+        ? original.children.filter(childId => includedIds.has(childId as string))
+        : [];
+      newItems[id] = { ...original, children: newChildren };
+    });
+
+    return newItems;
+  }, [items, searchQuery]);
 
   const handleOnDrop = (
     draggedItems: TreeItem[],
@@ -216,7 +260,6 @@ function FileSystem() {
     }
   };
 
-  // This is for the single-item archive from context menu
   const handleArchiveItem = async () => {
     if (!contextMenu) return;
     const itemToArchive = items[contextMenu.item];
@@ -255,7 +298,6 @@ function FileSystem() {
 
         return newItems;
       });
-      // Refresh archive modal
       window.api.requestNotebooksRefresh(); 
     }
     setContextMenu(null);
@@ -263,7 +305,6 @@ function FileSystem() {
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
-    // Don't show context menu if in archive mode
     if(isArchiveModeActive) return; 
 
     const target = e.target as HTMLElement;
@@ -280,8 +321,6 @@ function FileSystem() {
     }
   };
 
-  // --- 3. ADD HANDLERS FOR THE POPUP ---
-
   const toggleArchiveSelectItem = (itemId: TreeItemIndex) => {
     setArchiveSelection(prev =>
       prev.includes(itemId)
@@ -296,7 +335,6 @@ function FileSystem() {
   };
 
   const handleArchiveSelectAll = () => {
-    // Selects all items except the root
     const allItemIds = Object.keys(items).filter(id => id !== 'root');
     setArchiveSelection(allItemIds);
   };
@@ -307,13 +345,9 @@ function FileSystem() {
     const pathsToArchive = archiveSelection.map(id => items[id]?.path).filter(Boolean);
     if (pathsToArchive.length === 0) return;
 
-    // --- IMPORTANT ---
-    // You will need to implement this `archiveNotebooks` (plural)
-    // function in your main process. It must accept an array of paths.
     const result = await window.api.archiveNotebooks(pathsToArchive); 
 
     if (result.success) {
-      // Manually remove items from state to update UI instantly
       setItems(prev => {
         const newItems = { ...prev };
         const allItemsToDelete = new Set<TreeItemIndex>();
@@ -321,7 +355,6 @@ function FileSystem() {
         archiveSelection.forEach(itemToArchiveId => {
           if (!newItems[itemToArchiveId]) return;
 
-          // 1. Remove item from its parent's children array
           const parent = getParent(newItems, itemToArchiveId);
           if (parent) {
             newItems[parent.index] = {
@@ -330,7 +363,6 @@ function FileSystem() {
             };
           }
 
-          // 2. Collect the item and all its descendants
           const queue = [itemToArchiveId];
           while (queue.length > 0) {
             const currentItem = queue.shift();
@@ -344,7 +376,6 @@ function FileSystem() {
           }
         });
 
-        // 3. Delete all collected items from the state
         allItemsToDelete.forEach(id => {
           delete newItems[id];
         });
@@ -352,14 +383,10 @@ function FileSystem() {
         return newItems;
       });
 
-      // Request a refresh for the Archive Modal
       window.api.requestNotebooksRefresh(); 
     }
-    
-    // Reset state
     handleCancelArchiveMode();
   };
-
 
   return (
     <div className='file-system' onKeyUp={handleDeleteItem}>
@@ -372,7 +399,6 @@ function FileSystem() {
           {t('My Notebooks')}
         </span>
         <div className='file-system-header-buttons'>
-          {/* --- 4. ADD ARCHIVE BUTTON & HIDE OTHERS --- */}
           {!isArchiveModeActive ? (
             <>
               <button onClick={() => setArchiveModeActive(true)} data-tooltip={t('Archive Items')}>
@@ -386,18 +412,23 @@ function FileSystem() {
               </button>
             </>
           ) : (
-            // You can optionally show a "Cancel" button here too
             <button onClick={handleCancelArchiveMode} data-tooltip={t('Cancel')}>
                <i className='fi fi-rr-cross-small' />
             </button>
           )}
         </div>
       </div>
+      
+      {/* [ADDED] Search Bar placed here */}
+      <div style={{ padding: '0 10px 10px 10px' }}>
+          <Search />
+      </div>
+
       <div className='files-tree-container' onClick={handleClickedOutsideItem} onContextMenu={handleContextMenu}>
         <ControlledTreeEnvironment
-          items={items}
-          canDragAndDrop={!isArchiveModeActive} // Disable drag/drop in archive mode
-          canReorderItems={!isArchiveModeActive}
+          items={displayedItems} // [CHANGED] Use displayedItems for filtering
+          canDragAndDrop={!isArchiveModeActive && !searchQuery}
+          canReorderItems={!isArchiveModeActive && !searchQuery}
           canDropOnFolder={!isArchiveModeActive}
           canDropOnNonFolder={!isArchiveModeActive}
           getItemTitle={(item) => item.data}
@@ -407,7 +438,6 @@ function FileSystem() {
             ['fileSystem']: {
               focusedItem,
               expandedItems,
-              // Disable default selection behavior in archive mode
               selectedItems: isArchiveModeActive ? [] : selectedItems, 
             },
           }}
@@ -415,7 +445,7 @@ function FileSystem() {
           onFocusItem={(item) => {
             const mathTreeItem = item as MathTreeItem;
             setFocusedItem(mathTreeItem.index);
-            if (!isArchiveModeActive) { // Only update file view if not in archive mode
+            if (!isArchiveModeActive) {
               item.isFolder
                 ? setSelectedDirectory(mathTreeItem.index)
                 : setSelectedFile(mathTreeItem.path);
@@ -433,7 +463,6 @@ function FileSystem() {
           }
           onSelectItems={isArchiveModeActive ? () => {} : setSelectedItems}
           onRenameItem={handleRenameItem}
-          // --- 5. RENDER CHECKBOXES ---
           renderItemTitle={({ title, item }) => (
             <div className="rct-tree-item-title">
               {isArchiveModeActive && item.index !== 'root' && (
@@ -442,7 +471,7 @@ function FileSystem() {
                   className="item-checkbox"
                   checked={archiveSelection.includes(item.index)}
                   onChange={() => toggleArchiveSelectItem(item.index)}
-                  onClick={(e) => e.stopPropagation()} // Stop tree from capturing click
+                  onClick={(e) => e.stopPropagation()}
                 />
               )}
               {title}
@@ -478,7 +507,6 @@ function FileSystem() {
         />
       )}
 
-      {/* --- 6. RENDER THE POPUP --- */}
       {isArchiveModeActive && (
         <ArchiveActionsPopup
           selectionCount={archiveSelection.length}

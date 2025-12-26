@@ -6,7 +6,7 @@ import { Tag, TagProps } from './Tag';
 import AddTag from './AddTag';
 import WindowControls from '@misc/window/components/WindowControls';
 import { useGeneralContext } from '@components/GeneralContext';
-import Search from './Search'; // Import the new Search component
+// [REMOVED] import Search from './Search';
 
 const Header = () => {
   const allTags = JSON.parse(localStorage.getItem('all-tags'));
@@ -30,7 +30,7 @@ const Header = () => {
           </div>
 
           <div className="header-center">
-            <Search /> {/* Add the Search component here */}
+            {/* [REMOVED] <Search /> */}
           </div>
 
           <div className="header-right">

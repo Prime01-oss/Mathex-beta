@@ -2,129 +2,201 @@ import React, { useState, useRef, useEffect, FormEvent, useCallback } from 'reac
 import './PopupChatBot.scss';
 import { useGeneralContext } from '@components/GeneralContext';
 
-// Define the structure for a message
+// --- MATH & MARKDOWN IMPORTS ---
+import ReactMarkdown from 'react-markdown';
+import remarkMath from 'remark-math';
+import rehypeKatex from 'rehype-katex';
+import 'katex/dist/katex.min.css';
+
 type Message = {
   sender: 'user' | 'ai';
   text: string;
+  timestamp: string;
 };
 
 const PopupChatBot: React.FC = () => {
   const { setIsChatBotOpen } = useGeneralContext();
   const [messages, setMessages] = useState<Message[]>([
-    { sender: 'ai', text: "Hi Samar! Need help with math?" }
+    { 
+      sender: 'ai', 
+      text: "Hello! I am your Math Buddy. You can write equations using LaTeX (e.g., $E=mc^2$). How can I help?",
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
   ]);
   const [currentInput, setCurrentInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Refs
   const chatLogRef = useRef<HTMLDivElement>(null);
+  const windowRef = useRef<HTMLDivElement>(null);
 
-  // --- Draggable Logic (Unchanged) ---
-  const chatBotRef = useRef<HTMLDivElement>(null);
-  const isDragging = useRef(false);
-  const offset = useRef({ x: 0, y: 0 });
+  // --- WINDOW STATE (Size & Position) ---
+  const [size, setSize] = useState({ width: 450, height: 650 });
+  const [position, setPosition] = useState({ x: window.innerWidth - 500, y: window.innerHeight - 700 });
 
-  const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (chatBotRef.current) {
-      isDragging.current = true;
-      offset.current = {
-        x: e.clientX - chatBotRef.current.getBoundingClientRect().left,
-        y: e.clientY - chatBotRef.current.getBoundingClientRect().top,
-      };
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-  };
-  const handleMouseMove = (e: MouseEvent) => {
-    if (isDragging.current && chatBotRef.current) {
-      chatBotRef.current.style.left = `${e.clientX - offset.current.x}px`;
-      chatBotRef.current.style.top = `${e.clientY - offset.current.y}px`;
-      chatBotRef.current.style.bottom = 'auto';
-      chatBotRef.current.style.right = 'auto';
-    }
-  };
-  const handleMouseUp = () => {
-    isDragging.current = false;
-    document.removeEventListener('mousemove', handleMouseMove);
-    document.removeEventListener('mouseup', handleMouseUp);
-  };
-  // --- End Draggable Logic ---
-
-  // Scroll to bottom when new messages appear
+  // Auto-scroll
   useEffect(() => {
     if (chatLogRef.current) {
       chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
     }
-  }, [messages]);
+  }, [messages, isLoading]);
 
-  // Handle the form submission
+  // --- DRAGGABLE LOGIC ---
+  const dragRef = useRef<{ isDragging: boolean; startX: number; startY: number; initialLeft: number; initialTop: number } | null>(null);
+
+  const handleDragStart = (e: React.MouseEvent) => {
+    if (!windowRef.current) return;
+    dragRef.current = {
+      isDragging: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialLeft: position.x,
+      initialTop: position.y
+    };
+    document.addEventListener('mousemove', handleDragging);
+    document.addEventListener('mouseup', handleDragEnd);
+  };
+
+  const handleDragging = (e: MouseEvent) => {
+    if (!dragRef.current?.isDragging) return;
+    const dx = e.clientX - dragRef.current.startX;
+    const dy = e.clientY - dragRef.current.startY;
+    setPosition({ x: dragRef.current.initialLeft + dx, y: dragRef.current.initialTop + dy });
+  };
+
+  const handleDragEnd = () => {
+    if (dragRef.current) dragRef.current.isDragging = false;
+    document.removeEventListener('mousemove', handleDragging);
+    document.removeEventListener('mouseup', handleDragEnd);
+  };
+
+  // --- RESIZABLE LOGIC ---
+  const resizeRef = useRef<{ isResizing: boolean; startX: number; startY: number; initialW: number; initialH: number } | null>(null);
+
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    resizeRef.current = {
+      isResizing: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      initialW: size.width,
+      initialH: size.height
+    };
+    document.addEventListener('mousemove', handleResizing);
+    document.addEventListener('mouseup', handleResizeEnd);
+  };
+
+  const handleResizing = (e: MouseEvent) => {
+    if (!resizeRef.current?.isResizing) return;
+    const dx = e.clientX - resizeRef.current.startX;
+    const dy = e.clientY - resizeRef.current.startY;
+    setSize({
+      width: Math.max(350, resizeRef.current.initialW + dx),
+      height: Math.max(450, resizeRef.current.initialH + dy)
+    });
+  };
+
+  const handleResizeEnd = () => {
+    if (resizeRef.current) resizeRef.current.isResizing = false;
+    document.removeEventListener('mousemove', handleResizing);
+    document.removeEventListener('mouseup', handleResizeEnd);
+  };
+
+  // --- SEND MESSAGE ---
   const handleSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
     const prompt = currentInput.trim();
     if (!prompt || isLoading) return;
 
-    // Add user message to chat
-    setMessages(prev => [...prev, { sender: 'user', text: prompt }]);
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    setMessages(prev => [...prev, { sender: 'user', text: prompt, timestamp }]);
     setCurrentInput('');
     setIsLoading(true);
 
     try {
-      // --- THIS IS THE FIX ---
-      // Call the function we defined in appPreload.tsx
       const aiResponseText = await window.api.getAIResponse(prompt);
-      
-      // Add AI response to chat
-      setMessages(prev => [...prev, { sender: 'ai', text: aiResponseText }]);
+      setMessages(prev => [...prev, { 
+        sender: 'ai', 
+        text: aiResponseText, 
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+      }]);
     } catch (error) {
-      console.error('Error getting AI response:', error);
-      setMessages(prev => [...prev, { sender: 'ai', text: "Sorry, I ran into an error. Please try again." }]);
+      setMessages(prev => [...prev, { sender: 'ai', text: "Error: Could not connect to AI.", timestamp: new Date().toLocaleTimeString() }]);
     } finally {
       setIsLoading(false);
     }
   }, [currentInput, isLoading]);
 
   return (
-    <div className="popup-chat-bot" ref={chatBotRef}>
-      <div className="popup-header" onMouseDown={handleMouseDown}>
-       <div className="profile-container"> {/* Or keep your existing container */}
-  <span className="emoji-highlight">🤖</span> {/* Emoji wrapped in its own span */}
-  <span> Math Buddy</span>
-</div>
-        <button className="close-button" onClick={() => setIsChatBotOpen(false)}>×</button>
-      </div>
-      <div className="popup-body">
-        <div className="chat-bot-interface">
-          <div className="chat-log" ref={chatLogRef}>
-            {messages.map((msg, index) => (
-              <div key={index} className={`message ${msg.sender}`}>
-                {/* We will add a markdown parser here later to render math */}
-                <p>{msg.text}</p>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="message ai">
-                <div className="typing-indicator">
-                  <span></span><span></span><span></span>
-                </div>
-              </div>
-            )}
+    <div 
+      className="premium-messenger-window" 
+      ref={windowRef}
+      style={{ width: size.width, height: size.height, left: position.x, top: position.y }}
+    >
+      {/* HEADER */}
+      <div className="messenger-header" onMouseDown={handleDragStart}>
+        <div className="header-left">
+          <div className="avatar-status">
+            <div className="avatar">🤖</div>
+            <div className="status-dot"></div>
           </div>
-          <form className="chat-input-form" onSubmit={handleSubmit}>
-            <textarea
-              value={currentInput}
-              onChange={(e) => setCurrentInput(e.target.value)}
-              placeholder="Ask a math question..."
-              rows={2}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
-            />
-            <button type="submit" data-tooltip="Send" disabled={isLoading}>
-              <i className="fi fi-rr-paper-plane"></i>
-            </button>
-          </form>
+          <div className="info">
+            <h3>Math Buddy</h3>
+            <span className="subtitle">Always active</span>
+          </div>
         </div>
+        <button onClick={() => setIsChatBotOpen(false)} className="close-btn">×</button>
+      </div>
+
+      {/* CHAT HISTORY */}
+      <div className="messenger-body" ref={chatLogRef}>
+        <div className="date-separator"><span>Today</span></div>
+        
+        {messages.map((msg, index) => (
+          <div key={index} className={`message-row ${msg.sender}`}>
+            {msg.sender === 'ai' && <div className="msg-avatar-small">🤖</div>}
+            
+            <div className="bubble-wrapper">
+              <div className="bubble">
+                {/* Renders LaTeX for BOTH User and AI */}
+                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {msg.text}
+                </ReactMarkdown>
+              </div>
+              <span className="timestamp">{msg.timestamp}</span>
+            </div>
+          </div>
+        ))}
+
+        {isLoading && (
+          <div className="message-row ai">
+            <div className="msg-avatar-small">🤖</div>
+            <div className="bubble loading">
+              <span>•</span><span>•</span><span>•</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* FOOTER */}
+      <div className="messenger-footer">
+        <form onSubmit={handleSubmit}>
+          <textarea
+            value={currentInput}
+            onChange={(e) => setCurrentInput(e.target.value)}
+            placeholder="Type a math problem (e.g. Solve $x^2 + 2x + 1$)..."
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(e);
+              }
+            }}
+          />
+          <button type="submit" disabled={isLoading || !currentInput.trim()}>
+            <i className="fi fi-rr-paper-plane"></i>
+          </button>
+        </form>
+        <div className="resize-handle" onMouseDown={handleResizeStart}></div>
       </div>
     </div>
   );

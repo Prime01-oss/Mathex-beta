@@ -1,183 +1,276 @@
-// Re-use the calculator styles for the popup frame
-@import '../PopupCalculator/PopupCalculator.scss';
+// 🔴 REMOVED: @import '../Application.scss'; 
+// Use variables directly. They are already loaded globally by the app.
 
-// Rename the base class for clarity
-.popup-chat-bot {
-  @extend .popup-calculator; // Inherit all styles from popup-calculator
-  max-width: 400px;
-  width: 90vw; // Make it wider on smaller screens if needed
-}
-
-.chat-bot-interface {
+.premium-messenger-window {
+  position: fixed;
+  // Use app specific background colors
+  background-color: var(--panel-bgcolor); 
+  border: 1px solid var(--app-border-color);
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5); // Deep premium shadow
   display: flex;
   flex-direction: column;
-  height: 450px; // Taller than calculator
-  background-color: var(--bg-color-l1); // Base background
+  z-index: 9999;
+  font-family: var(--app-font-family);
+  overflow: hidden;
+  animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  color: hsl(var(--app-text-color)); // Wrapped in HSL based on your theme format
 
-  .chat-log {
-    flex-grow: 1; // Take up available space
-    overflow-y: auto; // Allow scrolling
-    padding: 12px;
+  // --- HEADER ---
+  .messenger-header {
+    background-color: var(--app-bgcolor);
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--app-border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: grab;
+    user-select: none;
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .avatar-status {
+        position: relative;
+        .avatar {
+          width: 38px;
+          height: 38px;
+          background: var(--tool-bgcolor);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 1.3rem;
+          border: 1px solid var(--app-border-color);
+        }
+        .status-dot {
+          position: absolute;
+          bottom: 0;
+          right: 0;
+          width: 10px;
+          height: 10px;
+          background-color: #4caf50; // Active green
+          border: 2px solid var(--app-bgcolor);
+          border-radius: 50%;
+        }
+      }
+
+      .info {
+        h3 {
+          margin: 0;
+          font-size: 1rem;
+          font-weight: 600;
+          color: hsl(var(--app-text-color));
+        }
+        .subtitle {
+          font-size: 0.75rem;
+          opacity: 0.6;
+          display: block;
+        }
+      }
+    }
+
+    .close-btn {
+      background: transparent;
+      color: hsl(var(--app-text-color));
+      opacity: 0.5;
+      font-size: 1.5rem;
+      padding: 4px;
+      cursor: pointer;
+      border: none;
+      &:hover { opacity: 1; background: transparent; }
+    }
+  }
+
+  // --- BODY ---
+  .messenger-body {
+    flex: 1;
+    background-color: var(--page-bgcolor);
+    overflow-y: auto;
+    padding: 20px;
     display: flex;
     flex-direction: column;
-    gap: 12px; // Space between messages
-    background-color: var(--bg-color-l2); // Slightly different background for log area
+    gap: 16px;
+
+    .date-separator {
+      text-align: center;
+      margin: 10px 0;
+      span {
+        background: var(--tool-bgcolor);
+        padding: 4px 12px;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        opacity: 0.7;
+      }
+    }
+
+    .message-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      max-width: 85%;
+
+      &.ai {
+        align-self: flex-start;
+        .msg-avatar-small {
+          width: 28px;
+          height: 28px;
+          background: var(--tool-bgcolor);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 0.9rem;
+          margin-bottom: 5px;
+        }
+        .bubble {
+          background-color: var(--tool-bgcolor); // AI bubble matches tool color
+          color: hsl(var(--app-text-color));
+          border-top-left-radius: 4px;
+        }
+      }
+
+      &.user {
+        align-self: flex-end;
+        flex-direction: row-reverse;
+        .bubble {
+          background-color: var(--app-accent-color); // User bubble uses THEME ACCENT
+          color: white; // Always white text on accent
+          border-top-right-radius: 4px;
+          
+          // Fix links color inside user bubble
+          a { color: white; text-decoration: underline; }
+        }
+        .msg-avatar-small { display: none; }
+      }
+
+      .bubble-wrapper {
+        display: flex;
+        flex-direction: column;
+        
+        .bubble {
+          padding: 10px 16px;
+          border-radius: 18px;
+          font-size: 0.95rem;
+          line-height: 1.5;
+          word-wrap: break-word;
+          position: relative;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+          // Proper spacing for paragraphs and math
+          p { margin: 0; }
+          .katex-display { margin: 0.5em 0; overflow-x: auto; overflow-y: hidden; }
+          
+          // Inline Code
+          code {
+            background: rgba(0,0,0,0.2);
+            padding: 2px 5px;
+            border-radius: 4px;
+            font-family: monospace;
+          }
+          // Block Code
+          pre {
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+            overflow-x: auto;
+          }
+        }
+
+        .timestamp {
+          font-size: 0.7rem;
+          margin-top: 4px;
+          opacity: 0.5;
+          margin-left: 8px;
+          margin-right: 8px;
+        }
+      }
+    }
+
+    .loading span {
+      animation: bounce 1s infinite;
+      display: inline-block;
+      margin: 0 2px;
+      &:nth-child(2) { animation-delay: 0.2s; }
+      &:nth-child(3) { animation-delay: 0.4s; }
+    }
   }
 
-  .message {
-    padding: 10px 14px;
-    border-radius: 18px; // Rounded corners
-    max-width: 85%; // Prevent bubbles from being too wide
-    word-wrap: break-word; // Wrap long words
-    line-height: 1.4; // Improve readability
+  // --- FOOTER ---
+  .messenger-footer {
+    background-color: var(--app-bgcolor);
+    padding: 14px;
+    border-top: 1px solid var(--app-border-color);
+    position: relative;
 
-    p {
-      margin: 0;
-      white-space: pre-wrap; // Respect newlines in the text
-    }
+    form {
+      display: flex;
+      align-items: flex-end;
+      gap: 10px;
+      background-color: var(--page-bgcolor);
+      border: 1px solid var(--app-border-color);
+      border-radius: 20px;
+      padding: 8px 12px;
+      transition: border 0.2s;
 
-    // Style for user messages (sent by you)
-    &.user {
-      align-self: flex-end; // Align to the right
-      background-color: var(--theme-color-main); // Use your app's theme color
-      color: white; // White text on theme color
-      border-bottom-right-radius: 4px; // Squarish corner for visual distinction
-    }
+      &:focus-within {
+        border-color: var(--app-accent-color);
+      }
 
-    // Style for AI messages (received)
-    &.ai {
-      align-self: flex-start; // Align to the left
+      textarea {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: hsl(var(--app-text-color));
+        font-family: inherit;
+        font-size: 0.95rem;
+        resize: none;
+        max-height: 100px;
+        outline: none;
+        padding: 6px 0;
+      }
 
-      // --- THIS IS YOUR REQUEST ---
-      background-color: #2c3e50; // Dark Blue Shade
-      color: #ffffff; // White text for contrast
-      // --- END REQUEST ---
-
-      border-bottom-left-radius: 4px; // Squarish corner
-
-      // Basic styling for Markdown elements (code, bold, etc.)
-      p {
-        code {
-          background-color: #4a5a6a; // Darker blue-gray for code
-          color: #e0e0e0;
-          padding: 0.2em 0.4em;
-          border-radius: 4px;
-          font-family: monospace;
-          font-size: 0.9em;
-        }
-        pre {
-          background-color: #4a5a6a; // Darker blue-gray for code block
-          color: #e0e0e0;
-          padding: 10px;
-          border-radius: 8px;
-          overflow-x: auto; // Allow horizontal scroll for long code blocks
-          code { padding: 0; background: none;} // Reset padding inside pre
-        }
-        strong {
-          font-weight: 600; // Make bold text bolder
-        }
-        em {
-          font-style: italic;
+      button {
+        background: var(--app-accent-color);
+        color: white;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: unset; // Override global button styles
+        cursor: pointer;
+        
+        &:disabled {
+          background: var(--tool-bgcolor);
+          opacity: 0.5;
+          cursor: not-allowed;
         }
       }
     }
-  }
 
-  // Style for the input area at the bottom
-  .chat-input-form {
-    display: flex;
-    align-items: flex-start; // Align items to the top (good for multi-line text)
-    padding: 10px;
-    gap: 8px; // Space between textarea and button
-    border-top: 1px solid var(--border-color); // Separator line
-
-    textarea {
-      flex-grow: 1; // Take up available width
-      resize: none; // Don't allow manual resizing
-      border: none;
-      background-color: var(--bg-color-l2); // Input background
-      border-radius: 8px;
-      padding: 10px;
-      color: var(--text-color);
-      font-family: inherit; // Use app's font
-      font-size: 0.9rem;
-      max-height: 100px; // Limit height growth
-      border: 1px solid var(--border-color);
-      line-height: 1.4;
-
-      &:focus {
-        outline: none; // Remove default outline
-        border-color: var(--theme-color-main); // Highlight with theme color on focus
-        box-shadow: 0 0 0 1px var(--theme-color-main); // Subtle glow
-      }
-    }
-
-    // Style for the send button
-    button {
-      background: none;
-      border: none;
-      color: var(--theme-color-main);
-      font-size: 1.2rem; // Icon size
-      cursor: pointer;
-      padding: 8px;
-      margin-top: 1px; // Align icon better with textarea text
-      height: 42px; // Match textarea initial height approx
-      
-      &:hover {
-        opacity: 0.8;
-      }
-      &:disabled {
-        color: var(--text-color-l2); // Grey out when disabled
-        cursor: not-allowed;
-      }
+    .resize-handle {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 15px;
+      height: 15px;
+      cursor: nwse-resize;
+      background: linear-gradient(135deg, transparent 50%, var(--app-border-color) 50%);
     }
   }
 }
 
-// Typing indicator styles (animated dots)
-.typing-indicator {
-  display: flex;
-  padding: 8px 0;
-  span {
-    height: 8px;
-    width: 8px;
-    background-color: #ffffff; // White dots on dark blue
-    opacity: 0.7;
-    border-radius: 50%;
-    display: inline-block;
-    margin: 0 1px;
-    // Animation definition
-    animation: wave 1.3s infinite;
-    // Add delays for the bouncing effect
-    &:nth-of-type(2) { animation-delay: 0.2s; }
-    &:nth-of-type(3) { animation-delay: 0.4s; }
-  }
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
-// Keyframes for the dot animation
-@keyframes wave {
-  0%, 60%, 100% { transform: translateY(0); }
-  30% { transform: translateY(-6px); } // Bounce up
-}
-.profile-container { // Assuming you use this container
-  display: flex;
-  align-items: center;
-  gap: 8px; // Space between emoji circle and text
-
-  .emoji-highlight {
-    display: inline-flex; // Needed to apply padding and border-radius correctly
-    align-items: center;  // Center emoji vertically
-    justify-content: center; // Center emoji horizontally
-    background-color: var(--theme-color-main); // Or choose a specific color like #e0e0e0
-    border-radius: 50%;   // Make it a circle
-    width: 28px;          // Set the width of the circle
-    height: 28px;         // Set the height of the circle
-    font-size: 16px;      // Adjust emoji size if needed
-    line-height: 1;       // Helps with vertical centering
-    color: var(--text-color); // Or choose a specific color for the emoji itself
-  }
-
-  span:not(.emoji-highlight) { // Style for the "Math Buddy" text
-    font-weight: bold;
-  }
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
 }
