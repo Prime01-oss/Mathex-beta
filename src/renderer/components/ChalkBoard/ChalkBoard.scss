@@ -1,113 +1,166 @@
 @import '../Theme.scss';
 
+// --- MATERIALS ---
+@mixin material-walnut {
+  background-color: #3e2723;
+  background-image: repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0px, rgba(255,255,255,0.03) 1px, transparent 1px, transparent 4px),
+                    radial-gradient(ellipse at bottom left, rgba(0,0,0,0.4), transparent 70%),
+                    linear-gradient(180deg, #4e342e 0%, #291815 100%);
+  box-shadow: inset 0 1px 1px rgba(255,255,255,0.15), inset 0 -10px 20px rgba(0,0,0,0.6);
+}
+@mixin material-steel {
+  background: #cfd8dc;
+  background-image: linear-gradient(135deg, #b0bec5 0%, #eceff1 50%, #90a4ae 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.8), inset 0 0 5px rgba(255,255,255,0.5), 0 2px 5px rgba(0,0,0,0.4);
+}
+@mixin material-brass {
+  background: linear-gradient(90deg, #ffa000 0%, #ffd54f 25%, #ffecb3 50%, #ff6f00 100%);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.6);
+}
+
+// --- LAYOUT ---
 .chalk-board-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  
-  /* 1. Add Padding for the "Furnished" Look */
-  padding: 25px 35px; 
-  box-sizing: border-box;
-  
-  /* Background behind the floating board */
-  background-color: var(--math-block-bgcolor); 
-  
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 50;
-  
-  /* Smooth Fade In */
-  animation: fadeIn 0.25s cubic-bezier(0.2, 0.8, 0.2, 1);
+  position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: radial-gradient(circle at center, rgba(10, 5, 0, 0.9), rgba(0,0,0,0.98));
+  display: flex; justify-content: center; align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(10px);
+  animation: boardEnter 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.draw-container {
-  width: 100%;
-  height: 100%;
+.board-frame {
+  width: 96vw; height: 94vh;
   position: relative;
+  border: 22px solid #2d1e1a; border-radius: 10px;
+  background-color: #2d1e1a;
+  box-shadow: inset 2px 2px 3px rgba(255,255,255,0.12), inset 0 0 20px rgba(0,0,0,0.8), 0 50px 100px rgba(0,0,0,0.9);
+  display: flex; flex-direction: column; overflow: hidden;
   
-  /* 2. The Premium "Card" Look */
-  background-color: #fff; 
-  border-radius: 16px; 
-  overflow: hidden; 
-  
-  /* Deep shadow */
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15), 
-              0 0 0 1px var(--app-border-color);
-
-  /* --- TLDRAW V1 UI FILTERING --- */
-  /* Note: V1 classes often use 'tl-' prefix but structure is different */
-
-  /* Hide Top Panel (Menu, Title, People, etc.) */
-  .tl-top-panel {
-    display: none !important;
+  &.theme-green {
+    background-color: #243427;
+    background-image: radial-gradient(circle at 50% 50%, transparent 30%, rgba(0,0,0,0.7) 100%),
+                      radial-gradient(ellipse at 40% 40%, rgba(255,255,255,0.03) 0%, transparent 60%),
+                      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' opacity='1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E");
   }
-  
-  /* Hide Bottom Left Zoom/Pages Controls */
-  .tl-zoom-panel, .tl-page-panel {
-    display: none !important;
-  }
-
-  /* --- CUSTOMIZE THE TOOLBAR (V1) --- */
-  .tl-primary-tools {
-    /* Style the toolbar container */
-    background-color: var(--tool-bgcolor) !important;
-    border: 1px solid var(--app-border-color) !important;
-    border-radius: 12px !important;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08) !important;
-    
-    /* In V1, the toolbar is often a flex container. 
-       We target children by aria-label or data-testid to hide them. */
-    
-    /* Hide Select (Cursor) Tool */
-    [aria-label="Select"], [data-testid="Select"] {
-      display: none !important;
-    }
-
-    /* Hide Shapes, Arrows, Text, etc. */
-    [aria-label="Rectangle"], [data-testid="Rectangle"],
-    [aria-label="Ellipse"], [data-testid="Ellipse"],
-    [aria-label="Triangle"], [data-testid="Triangle"],
-    [aria-label="Line"], [data-testid="Line"],
-    [aria-label="Arrow"], [data-testid="Arrow"],
-    [aria-label="Text"], [data-testid="Text"],
-    [aria-label="Sticky"], [data-testid="Sticky"],
-    [aria-label="Asset"], [data-testid="Asset"] {
-      display: none !important;
-    }
-  }
-
-  /* Style the Remaining Buttons (Pen & Eraser) */
-  .tl-primary-tools > button {
-    color: var(--tool-color) !important;
-    border-radius: 8px !important;
-    margin: 2px !important;
-    
-    &:hover {
-      background-color: var(--tool-hover-bgcolor) !important;
-    }
-    
-    /* Active State (V1 often uses a generic active class or attribute) */
-    &[data-state="active"], &[aria-pressed="true"] {
-      background-color: var(--app-accent-color) !important;
-      color: white !important;
-    }
-  }
-
-  /* --- STYLE PANEL (Colors) --- */
-  /* Ensure the style panel (where colors are) is visible */
-  .tl-style-panel {
-    background-color: var(--tool-bgcolor) !important;
-    border: 1px solid var(--app-border-color) !important;
-    border-radius: 12px !important;
-    /* Move it up slightly to clear the padding if needed */
-    bottom: 80px !important; 
+  &.theme-black {
+    background-color: #181818;
+    background-image: radial-gradient(circle at 50% 50%, transparent 20%, rgba(0,0,0,0.8) 100%),
+                      url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' opacity='1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
   }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.98); }
-  to { opacity: 1; transform: scale(1); }
+.wood-bezel-controls {
+  position: absolute; top: 15px; right: 20px;
+  display: flex; gap: 12px; z-index: 50;
+  .wood-peg {
+    width: 14px; height: 14px; border-radius: 50%; border: 2px solid rgba(0,0,0,0.6);
+    box-shadow: 0 1px 1px rgba(255,255,255,0.1), inset 0 2px 4px rgba(0,0,0,0.5);
+    cursor: pointer; transition: all 0.2s;
+    &:hover { transform: scale(1.1); box-shadow: 0 0 8px rgba(255,255,255,0.3); }
+    &.active { border-color: #eee; box-shadow: 0 0 10px rgba(255,255,255,0.5), inset 0 0 5px rgba(0,0,0,0.5); }
+  }
 }
+
+.board-canvas {
+  width: 100%; height: 100%; touch-action: none;
+  cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-opacity="0.8"><circle cx="12" cy="12" r="2"/></svg>') 12 12, crosshair;
+  &.grabbing { cursor: grabbing; } &.tool-pan { cursor: grab; } &.tool-eraser { cursor: none; }
+}
+
+// --- DRAWER & HINT ---
+.tray-trigger-zone {
+  position: absolute; bottom: 0; left: 0; width: 100%; height: 40px; z-index: 200;
+  display: flex; justify-content: center;
+  &:hover {
+    height: 140px; 
+    .premium-tray { transform: translateY(0); opacity: 1; box-shadow: 0 -10px 50px rgba(0,0,0,0.8); }
+    .drawer-hint { opacity: 0; transform: translateY(50px); }
+  }
+}
+
+.drawer-hint {
+  position: absolute; bottom: 0; left: 50%; transform: translateX(-50%);
+  width: 100px; height: 25px; background-color: #3e2723; border-radius: 12px 12px 0 0;
+  border-top: 1px solid rgba(255,255,255,0.1); box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  color: rgba(255,255,255,0.5); pointer-events: none;
+  transition: all 0.3s ease; animation: bounceHint 3s infinite;
+  
+  svg { margin-bottom: -4px; width: 14px; height: 14px; }
+  .hint-text { font-size: 8px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; color: #bcaaa4; }
+}
+
+.premium-tray {
+  @include material-walnut;
+  position: absolute; bottom: 0; width: auto; min-width: 450px; /* Reduced width */
+  transform: translateY(100%); opacity: 0.9;
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15), opacity 0.3s;
+  display: flex; align-items: flex-end; gap: 16px; /* Reduced gap */
+  padding: 15px 30px 15px; /* Reduced padding */
+  border-radius: 8px 8px 0 0; border-top: 1px solid rgba(255,255,255,0.08);
+
+  .tray-tooltip {
+    position: absolute; top: -45px; left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; color: #ffb74d; padding: 5px 12px; border-radius: 4px; border: 1px solid #333;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; pointer-events: none;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5); animation: fadeUp 0.2s ease-out;
+    &::after { content:''; position:absolute; bottom:-4px; left:50%; transform:translateX(-50%) rotate(45deg); width:8px; height:8px; background:#1a1a1a; border-right:1px solid #333; border-bottom:1px solid #333; }
+  }
+  .divider-brass { width: 2px; height: 35px; @include material-brass; margin-bottom: 5px; opacity: 0.8; }
+  .tray-section { display: flex; align-items: flex-end; gap: 10px; }
+}
+
+// --- TOOLS (Compacted Sizes) ---
+.chalk-cylinder {
+  width: 14px; height: 45px; cursor: pointer; position: relative; transition: transform 0.2s cubic-bezier(0.3,1.5,0.5,1); filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5));
+  .chalk-top { height: 5px; width: 100%; border-radius: 50%; position: absolute; top: 0; left: 0; filter: brightness(1.15); z-index: 2; }
+  .chalk-side { position: absolute; top: 2px; left: 0; width: 100%; height: 43px; border-radius: 0 0 3px 3px; background-image: linear-gradient(to right, rgba(0,0,0,0.15) 0%, rgba(255,255,255,0.15) 30%, rgba(0,0,0,0.1) 100%); z-index: 1; }
+  &:hover { transform: translateY(-8px); }
+  &.picked { transform: translateY(-15px) rotate(4deg); filter: drop-shadow(0 10px 10px rgba(0,0,0,0.6)); }
+}
+
+.tool-heavy {
+    background: transparent !important; // Force Transparency
+    border: none; padding: 0; cursor: pointer;
+    transition: transform 0.2s ease; display: flex; justify-content: center; align-items: center; outline: none;
+    
+    * { pointer-events: none; }
+
+    &:hover { transform: translateY(-6px); filter: brightness(1.1); background: transparent !important; }
+    &.active { transform: translateY(-15px); filter: drop-shadow(0 15px 15px rgba(0,0,0,0.6)); }
+}
+
+.tool-heavy.ruler {
+    width: 35px; height: 70px;
+    .ruler-metallic-face { width: 100%; height: 100%; @include material-steel; border-radius: 2px; border: 1px solid #90a4ae; position: relative;
+    .markings { position: absolute; top: 4px; bottom: 4px; left: 0; width: 10px; background-image: repeating-linear-gradient(to bottom, #37474f 0, #37474f 1px, transparent 1px, transparent 8px); border-right: 1px solid rgba(0,0,0,0.1); } }
+}
+
+.tool-heavy.compass { width: 50px; height: 80px; } 
+
+.tool-heavy.pan {
+    width: 40px; height: 50px;
+    .icon-holder { color: #d7ccc8; display: flex; align-items: center; justify-content: center; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5)); }
+}
+
+.tool-heavy.duster {
+    width: 60px; height: 40px; flex-direction: column; box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    .handle-oak { flex: 1; width: 100%; background-color: #5d4037; background-image: linear-gradient(45deg, #5d4037, #795548); border-radius: 6px 6px 0 0; box-shadow: inset 0 1px 1px rgba(255,255,255,0.2), inset 0 -2px 5px rgba(0,0,0,0.3); border-top: 1px solid rgba(255,255,255,0.1); overflow: hidden;
+    .grain { width: 100%; height: 100%; opacity: 0.2; background-image: repeating-radial-gradient(circle at 0 0, transparent 0, transparent 10px, rgba(0,0,0,0.2) 12px); } }
+    .felt-pad { height: 12px; width: 100%; background-color: #263238; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.15'/%3E%3C/svg%3E"); border-radius: 0 0 3px 3px; border-top: 1px solid #111; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+}
+
+.tool-heavy.sponge {
+    width: 45px; height: 30px;
+    .sponge-material { width: 100%; height: 100%; background-color: #fdd835; background-image: radial-gradient(circle, rgba(255,255,255,0.4) 1px, transparent 1px); background-size: 3px 3px; border-radius: 6px; box-shadow: inset -3px -3px 8px rgba(0,0,0,0.15), inset 2px 2px 4px rgba(255,255,255,0.5), 0 4px 8px rgba(0,0,0,0.3); position: relative;
+    .hole { position: absolute; background: rgba(160, 100, 0, 0.2); border-radius: 50%; box-shadow: inset 1px 1px 2px rgba(0,0,0,0.3); } .h1 { top: 6px; left: 8px; width: 8px; height: 6px; } .h2 { bottom: 6px; right: 10px; width: 6px; height: 6px; } .h3 { top: 12px; left: 22px; width: 5px; height: 5px; } }
+}
+
+.tool-heavy.close-block {
+    width: 35px; height: 35px; background-color: #3e2723; border-radius: 4px; display: flex; justify-content: center; align-items: center; box-shadow: inset 1px 1px 2px rgba(255,255,255,0.1), inset -1px -1px 5px rgba(0,0,0,0.5), 0 3px 6px rgba(0,0,0,0.4); color: #21120f;
+    &:hover { background-color: #4e342e; color: #3e2723; transform: translateY(-2px); }
+}
+
+@keyframes boardEnter { from { opacity: 0; transform: scale(1.02); } to { opacity: 1; transform: scale(1); } }
+@keyframes fadeUp { from { opacity: 0; transform: translate(-50%, 5px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes bounceHint { 0%, 20%, 50%, 80%, 100% { transform: translateX(-50%) translateY(0); } 40% { transform: translateX(-50%) translateY(-3px); } 60% { transform: translateX(-50%) translateY(-1px); } }

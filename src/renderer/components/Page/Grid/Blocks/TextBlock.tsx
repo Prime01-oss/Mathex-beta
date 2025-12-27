@@ -29,9 +29,17 @@ type BulletedListElement = {
 interface CustomElement extends BaseElement {
   type?: string;
   children: Descendant[];
-  }
+}
 
-const SHORTCUTS = {
+// ✅ Fixed: Replaced 'any' with React.HTMLAttributes to satisfy ESLint and provide type safety
+type ElementProps = {
+  attributes: React.HTMLAttributes<HTMLElement>; 
+  children: React.ReactNode;
+  element: CustomElement;
+};
+
+// Typed as Record<string, string>
+const SHORTCUTS: Record<string, string> = {
   '*': 'list-item',
   '-': 'list-item',
   '+': 'list-item',
@@ -51,20 +59,18 @@ function isDescendant(content: string | string[] | Descendant[] | canvasProps): 
 }
 
 const TextBlockContent = ({ content, blockStateFunction }: ValueProps) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  
   const valueToSet = isDescendant(content)
     ? content
     : [{ type: 'paragraph', children: [{ text: '' }] }];
+    
+  // Explicitly typed props in callback
   const renderElement = useCallback(
-    (
-      props: JSX.IntrinsicAttributes & {
-        attributes: unknown;
-        children: unknown;
-        element: unknown;
-      },
-    ) => <Element {...props} />,
+    (props: ElementProps) => <Element {...props} />,
     [],
   );
+  
   const editor = useMemo(
     () => withShortcuts(withReact(withHistory(createEditor()))),
     [],
@@ -142,7 +148,8 @@ const withShortcuts = (editor: ReactEditor) => {
       const start = Editor.start(editor, path);
       const range = { anchor, focus: start };
       const beforeText = Editor.string(editor, range) + text.slice(0, -1);
-      const type = (SHORTCUTS as any)[beforeText];
+      
+      const type = SHORTCUTS[beforeText];
 
       if (type) {
         Transforms.select(editor, range);
@@ -223,8 +230,11 @@ const withShortcuts = (editor: ReactEditor) => {
   return editor;
 };
 
-const Element = ({ attributes, children, element }: any) => {
-  switch (element.type) {
+// Uses the locally defined ElementProps
+const Element = ({ attributes, children, element }: ElementProps) => {
+  const elType = element.type;
+
+  switch (elType) {
     case 'block-quote':
       return <blockquote {...attributes}>{children}</blockquote>;
     case 'bulleted-list':
@@ -243,23 +253,6 @@ const Element = ({ attributes, children, element }: any) => {
       return <h6 {...attributes}>{children}</h6>;
     case 'list-item':
       return <li {...attributes}>{children}</li>;
-    // case 'divider':
-    //   return <div {...attributes} contentEditable={true}>
-    //   <hr />
-    //   {children}
-    // </div>;
-    // case 'math-inline':
-    //   return <div {...attributes} contentEditable={true}>
-    //     <MathView
-    //       value='x'
-    //       inlineShortcuts={ML_SHORTCUTS}
-    //       keybindings={ML_KEYBINDINGS}
-    //       onExport={(ref, latex) => latex}
-    //       plonkSound={null}
-    //       keypressSound={null}
-    //     />
-    //   {children}
-    // </div>;
     default:
       return <p {...attributes}>{children}</p>;
   }

@@ -7,21 +7,15 @@ export type TagProps = {
 };
 
 export const Tag = ({ text, color }: TagProps) => {
-  const { setCurrentFileTags, currentFileTags } = useGeneralContext();
+  // ADD: Import setSaveRequest
+  const { setCurrentFileTags, currentFileTags, setSaveRequest } = useGeneralContext();
 
   const handleRemoveTag = () => {
-    setCurrentFileTags(currentFileTags.filter((tag: string) => tag != text));
-
-    //TODO: figure out how to check if tag is not in all of the files
+    const newTags = currentFileTags.filter((tag: string) => tag !== text);
+    setCurrentFileTags(newTags);
     
-    // localStorage.setItem(
-    //   'all-tags',
-    //   JSON.stringify(
-    //     JSON.parse(localStorage.getItem('all-tags')).filter(
-    //       (tag: TagProps) => tag.text != text,
-    //     ),
-    //   ),
-    // );
+    // CRITICAL FIX: Trigger an immediate save after removing a tag
+    setSaveRequest({ cmd: 'save' });
   };
 
   return (

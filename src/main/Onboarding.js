@@ -364,7 +364,7 @@ const onboardingContent = {
             "type": "paragraph",
             "children": [
               {
-                "text": "Written in markdown (currently limited to headers and unordered lists)."
+                "text": "Written in markdown (currently limited to headers(# + space) and unordered lists(* + space))."
               }
             ]
           }

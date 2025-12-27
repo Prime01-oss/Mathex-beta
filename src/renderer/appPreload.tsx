@@ -1,4 +1,4 @@
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 import titlebarContext from '../../misc/window/titlebarContext'; // Adjusted path
 
 console.log('[ERWT] : Preload execution started');
@@ -22,7 +22,18 @@ const api = {
       'toggleNotebooks', 'Search',
     ];
     if (validChannels.includes(channel)) {
-      ipcRenderer.on(channel, (event, ...args) => func(...args));
+      // 1. Create a named reference to the wrapper function
+      // Using IpcRendererEvent instead of 'any' fixes the lint error
+      const subscription = (_event: IpcRendererEvent, ...args: unknown[]) => func(...args);
+
+      // 2. Add the listener
+      ipcRenderer.on(channel, subscription);
+
+      // 3. RETURN A CLEANUP FUNCTION
+      // This allows the React component to call removeListener() later
+      return () => {
+        ipcRenderer.removeListener(channel, subscription);
+      };
     }
   },
   getNotebooks: () => ipcRenderer.send('getNotebooks'),
@@ -54,7 +65,7 @@ const api = {
   // --- Functions from the original appPreload.tsx and our new additions ---
   getArchivedNotebooks: () => ipcRenderer.invoke('get-archived-notebooks'),
   archiveItem: (itemPath: string) => ipcRenderer.invoke('archive-item', itemPath),
-  
+
   // ✅ NEW FUNCTION FOR MULTI-ARCHIVE
   archiveNotebooks: (paths: string[]) => ipcRenderer.invoke('archive-notebooks', paths),
 

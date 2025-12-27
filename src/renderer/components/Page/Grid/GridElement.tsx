@@ -6,9 +6,19 @@ import { BlockElement, ValueProps, WidgetType } from '@renderer/common/types';
 import DrawBlockContent from './Blocks/DrawBlock';
 import './Grid.scss';
 
+// ✅ New Interface to match your data structure
+interface BlockState {
+  id: string;
+  metaData: {
+    content: unknown;
+  };
+  [key: string]: unknown; // Allow other properties
+}
+
 type GridElementProps = {
-  allValues: any[];
-  setValuesFunction: (...args: unknown[]) => unknown;
+  // ✅ Fixed: Use the new BlockState interface instead of ValueProps
+  allValues: BlockState[]; 
+  setValuesFunction: (values: BlockState[]) => void;
   blockElement: BlockElement;
   blockValue: ValueProps;
   onRemoveItem: (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => void;
@@ -85,12 +95,12 @@ const GridElement = React.forwardRef(
     }: GridElementProps,
     ref,
   ) => {
-    const [blockState, setBlockState] = useState();
+    const [blockState, setBlockState] = useState<unknown>();
 
     useEffect(() => {
-      const currentState = {
+      const currentState: BlockState = {
         id: blockElement.i,
-        metaData: {content: blockState},
+        metaData: { content: blockState },
       };
 
       const newAllValues = allValues.map((state) =>

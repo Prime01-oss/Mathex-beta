@@ -3,6 +3,7 @@ import { TreeItem } from 'react-complex-tree';
 
 export type MathTreeItem = {
   path: string;
+  tags?: string[];
 } & TreeItem;
 
 export type TreeItemsObj = {

@@ -105,7 +105,8 @@ const ShortcutsModal: React.FC = () => {
             </div>
             <div className={`shortcuts-list ${isPending ? 'loading' : ''}`}>
               {isFilterResultEmpty ? (
-                <div className="no-results-message"><p>No shortcuts found for "{searchTerm}"</p></div>
+                // Fixed: Escaped quotes using &quot;
+                <div className="no-results-message"><p>No shortcuts found for &quot;{searchTerm}&quot;</p></div>
               ) : (
                 <>
                   {activeCategory === 'mathEditor'

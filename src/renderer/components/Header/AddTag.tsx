@@ -4,12 +4,13 @@ import { useGeneralContext } from '@components/GeneralContext';
 import { useTranslation } from 'react-i18next';
 
 const AddTag = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   const [clickState, setClickState] = useState(false);
   const [currentValue, setCurrentValue] = useState('');
   const [savedValue, setSavedValue] = useState('');
-  const { setCurrentFileTags, currentFileTags } = useGeneralContext();
+  // ADD: Import setSaveRequest from context
+  const { setCurrentFileTags, currentFileTags, setSaveRequest } = useGeneralContext();
 
   const addTagStyle = {
     backgroundColor: 'unset',
@@ -31,31 +32,34 @@ const AddTag = () => {
   };
 
   useEffect(() => {
-    if (!localStorage.getItem('all-tags'))
+    // 1. Initialize Storage if missing (Prevents invisible tag error)
+    if (!localStorage.getItem('all-tags')) {
       localStorage.setItem('all-tags', JSON.stringify([]));
-    else {
-      const allTags: TagProps[] = JSON.parse(localStorage.getItem('all-tags'));
+    }
+
+    if (savedValue && savedValue.trim() !== '') {
+      const allTags: TagProps[] = JSON.parse(localStorage.getItem('all-tags') || '[]');
 
       const createdTag: TagProps = {
         text: savedValue,
         color: Math.floor(Math.random() * 359).toString(),
       };
 
-      if (
-        !allTags.find((tag: TagProps) => tag.text == createdTag.text) &&
-        createdTag.text != ''
-      ) {
+      // 2. Save Definition to LocalStorage
+      if (!allTags.find((tag: TagProps) => tag.text === createdTag.text)) {
         allTags.push(createdTag);
+        localStorage.setItem('all-tags', JSON.stringify(allTags));
       }
 
-      if (
-        !currentFileTags.find((tag: TagProps) => tag.text == createdTag.text) &&
-        createdTag.text != ''
-      ) {
-        setCurrentFileTags([...currentFileTags, createdTag.text].flat())
+      // 3. Add to Current File & Trigger Save
+      if (!currentFileTags.includes(createdTag.text)) {
+        setCurrentFileTags([...currentFileTags, createdTag.text]);
+        
+        // CRITICAL FIX: Trigger an immediate save so the tag is written to the file
+        setSaveRequest({ cmd: 'save' });
       }
-
-      localStorage.setItem('all-tags', JSON.stringify(allTags));
+      
+      setSavedValue(''); 
     }
   }, [savedValue]);
 

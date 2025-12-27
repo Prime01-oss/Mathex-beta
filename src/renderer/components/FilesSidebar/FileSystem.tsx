@@ -26,13 +26,37 @@ import {
 } from './FileSystemHelpers';
 import { MathTreeItem, TreeItemsObj } from './types';
 import { useTranslation } from 'react-i18next';
-// REMOVED: ContextMenu and ArchiveActionsPopup imports
 import Search from '../Header/SearchBar';
 
 type receivedProps = { filesPath: string; root: SetStateAction<TreeItemsObj> };
+
+// ✅ Fixed: Complete Interface with ALL used methods
+interface IElectronAPI {
+  // Navigation & Files
+  getNotebooks: () => void;
+  openFiles: () => void;
+  delete: (path: TreeItemIndex, isFolder?: boolean) => void;
+  move: (oldPath: string, newPath: string) => void;
+  newFile: (path: string) => void;
+  newFolder: (path: string) => void;
+  saveX: (data: string, filePath: string) => void;
+  loadX: (filePath: string) => void;
+
+  // System & Utils
+  getOS: () => void;
+  getAIResponse: (prompt: string) => Promise<string>;
+  
+  // IPC Communication
+  send: (channel: string, data?: unknown) => void;
+  receive: (channel: string, func: (...args: unknown[]) => void) => (() => void) | undefined;
+  
+  // Listeners
+  onNotebooksRefresh: (callback: () => void) => () => void;
+}
+
 declare global {
   interface Window {
-    api: any;
+    api: IElectronAPI;
   }
 }
 
@@ -55,7 +79,8 @@ function FileSystem() {
   const [selectedDirectory, setSelectedDirectory] = useState<TreeItemIndex>('root');
   const [focusedItem, setFocusedItem] = useState<TreeItemIndex>(-1);
   
-  // REMOVED: contextMenu, isArchiveModeActive, archiveSelection states
+  const [isDeleteMode, setIsDeleteMode] = useState(false);
+  const [checkedItems, setCheckedItems] = useState<string[]>([]);
 
   const fetchNotebooks = useCallback(() => {
     window.api.getNotebooks();
@@ -66,9 +91,15 @@ function FileSystem() {
   }, [fetchNotebooks]);
 
   useEffect(() => {
-    window.api.receive('gotNotebooks', (data: receivedProps) => {
-      setItems(data.root);
+    const removeListener = window.api.receive('gotNotebooks', (data: unknown) => {
+      setItems((data as receivedProps).root);
     });
+
+    return () => {
+      if (typeof removeListener === 'function') {
+        removeListener();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -81,15 +112,44 @@ function FileSystem() {
     };
   }, [fetchNotebooks]);
 
-  // Search Logic
+  // --- SORTING LOGIC ---
   const displayedItems = useMemo(() => {
-    if (!searchQuery) return items;
+    const rawItems = { ...items };
+
+    const sortTree = (itemsMap: TreeItemsObj) => {
+      const sortedMap = { ...itemsMap };
+      
+      Object.keys(sortedMap).forEach((key) => {
+        const item = sortedMap[key];
+        
+        if (item.children && item.children.length > 0) {
+          const folders = item.children.filter(childId => sortedMap[childId]?.isFolder);
+          const files = item.children.filter(childId => !sortedMap[childId]?.isFolder);
+
+          const alphaSort = (a: string, b: string) => {
+            const nameA = sortedMap[a]?.data?.toLowerCase() || '';
+            const nameB = sortedMap[b]?.data?.toLowerCase() || '';
+            return nameA.localeCompare(nameB);
+          };
+
+          folders.sort(alphaSort);
+          files.sort(alphaSort);
+
+          item.children = [...folders, ...files];
+        }
+      });
+      return sortedMap;
+    };
+
+    const sortedItems = sortTree(rawItems);
+
+    if (!searchQuery) return sortedItems;
 
     const lowerQuery = searchQuery.toLowerCase();
     const includedIds = new Set<string>();
 
     const traverse = (itemId: string): boolean => {
-      const item = items[itemId];
+      const item = sortedItems[itemId];
       if (!item) return false;
 
       let hasMatchingChild = false;
@@ -101,7 +161,12 @@ function FileSystem() {
         });
       }
 
-      const matches = item.data.toLowerCase().includes(lowerQuery);
+      const nameMatches = item.data.toLowerCase().includes(lowerQuery);
+      const tagMatches = item.tags?.some((tag) => 
+        tag.toLowerCase().includes(lowerQuery)
+      );
+
+      const matches = nameMatches || tagMatches;
       const shouldKeep = matches || hasMatchingChild || itemId === 'root';
 
       if (shouldKeep) {
@@ -112,16 +177,16 @@ function FileSystem() {
 
     traverse('root');
 
-    const newItems: TreeItemsObj = {};
+    const filteredItems: TreeItemsObj = {};
     includedIds.forEach(id => {
-      const original = items[id];
+      const original = sortedItems[id];
       const newChildren = original.children
         ? original.children.filter(childId => includedIds.has(childId as string))
         : [];
-      newItems[id] = { ...original, children: newChildren };
+      filteredItems[id] = { ...original, children: newChildren };
     });
 
-    return newItems;
+    return filteredItems;
   }, [items, searchQuery]);
 
   const handleOnDrop = (
@@ -177,7 +242,6 @@ function FileSystem() {
   };
 
   const handleRenameItem = (item: MathTreeItem, name: string): void => {
-    // Determine directory name safely handling both slash types
     const lastSeparatorIndex = Math.max(item.path.lastIndexOf('/'), item.path.lastIndexOf('\\'));
     const dirName = lastSeparatorIndex !== -1 ? item.path.slice(0, lastSeparatorIndex + 1) : '';
 
@@ -193,7 +257,6 @@ function FileSystem() {
       setErrorModalOpen(true);
     } else {
       setItems((prev) => {
-        // Construct new path safely
         const newPath = item.isFolder 
             ? `${dirName}${name}` 
             : `${dirName}${name}.json`;
@@ -201,8 +264,6 @@ function FileSystem() {
         const oldPath = item.index;
 
         let newItems = { ...prev };
-
-        // Calls the FIXED changeItemPath which now updates 'data'
         newItems = changeItemPath(newItems, item, newPath);
 
         for (const [, value] of Object.entries(newItems)) {
@@ -253,10 +314,37 @@ function FileSystem() {
     }
   };
 
-  // REMOVED: handleArchiveItem, handleContextMenu, toggleArchiveSelectItem, handleCancelArchiveMode, handleArchiveSelectAll, handleArchiveConfirm
+  const handleCheckboxChange = (id: string, checked: boolean) => {
+    if (checked) {
+      setCheckedItems((prev) => [...prev, id]);
+    } else {
+      setCheckedItems((prev) => prev.filter((item) => item !== id));
+    }
+  };
+
+  const handleBulkDelete = () => {
+    const newItems = { ...items };
+    checkedItems.forEach((id) => {
+      window.api.delete(id, false);
+      const item = newItems[id];
+      if (item) {
+        deleteItemFromItsPreviousParent(newItems, item);
+        delete newItems[id];
+      }
+    });
+
+    setItems(newItems);
+    setCheckedItems([]);
+    setIsDeleteMode(false);
+  };
+
+  const toggleDeleteMode = () => {
+    setIsDeleteMode(!isDeleteMode);
+    setCheckedItems([]);
+  };
 
   return (
-    <div className='file-system' onKeyUp={handleDeleteItem}>
+    <div className={`file-system ${isDeleteMode ? 'delete-mode' : ''}`} onKeyUp={handleDeleteItem}>
       <div className='file-system-header'>
         <span
           data-tooltip={t('Notebooks Tooltip')}
@@ -265,14 +353,38 @@ function FileSystem() {
         >
           {t('My Notebooks')}
         </span>
+        
         <div className='file-system-header-buttons'>
-          {/* REMOVED: Archive Toggle Button */}
-          <button onClick={addFolder} data-tooltip={t('New Folder')}>
-            <i className='fi fi-rr-add-folder' />
+          <button 
+            onClick={toggleDeleteMode} 
+            data-tooltip={isDeleteMode ? t('Cancel') : t('Delete Multiple')}
+            className={isDeleteMode ? 'active-delete-mode' : ''}
+          >
+            <i className={`fi ${isDeleteMode ? 'fi-rr-cross-small' : 'fi-rr-trash'}`} />
           </button>
-          <button onClick={addFile} data-tooltip={t('New File')}>
-            <i className='fi-rr-add-document' />
-          </button>
+
+          <div className="separator"></div>
+
+          {!isDeleteMode ? (
+            <>
+              <button onClick={addFolder} data-tooltip={t('New Folder')} className="action-btn">
+                <i className='fi fi-rr-add-folder' />
+              </button>
+              <button onClick={addFile} data-tooltip={t('New File')} className="action-btn">
+                <i className='fi fi-rr-add-document' />
+              </button>
+            </>
+          ) : (
+            <button 
+              onClick={handleBulkDelete} 
+              data-tooltip={t('Confirm Delete')}
+              className="confirm-delete-btn"
+              disabled={checkedItems.length === 0}
+            >
+              <i className="fi fi-rr-check" />
+              {checkedItems.length > 0 && <span className="count-badge">{checkedItems.length}</span>}
+            </button>
+          )}
         </div>
       </div>
       
@@ -283,11 +395,12 @@ function FileSystem() {
       <div className='files-tree-container' onClick={handleClickedOutsideItem}>
         <ControlledTreeEnvironment
           items={displayedItems}
-          canDragAndDrop={!searchQuery}
-          canReorderItems={!searchQuery}
+          canDragAndDrop={!searchQuery && !isDeleteMode}
+          canReorderItems={!searchQuery && !isDeleteMode}
           canDropOnFolder={true}
           canDropOnNonFolder={true}
           getItemTitle={(item) => item.data}
+          renderItemArrow={() => null}
           canSearch={false}
           keyboardBindings={{ renameItem: ['shift+R'] }}
           viewState={{
@@ -301,7 +414,6 @@ function FileSystem() {
           onFocusItem={(item) => {
             const mathTreeItem = item as MathTreeItem;
             setFocusedItem(mathTreeItem.index);
-            // Directly set selection as archive mode is gone
             item.isFolder
               ? setSelectedDirectory(mathTreeItem.index)
               : setSelectedFile(mathTreeItem.path);
@@ -318,34 +430,42 @@ function FileSystem() {
           }
           onSelectItems={setSelectedItems}
           onRenameItem={handleRenameItem}
-          renderItemTitle={({ title }) => (
+          renderItemTitle={({ title, item }) => (
             <div className="rct-tree-item-title">
-              {/* REMOVED: Checkbox logic */}
-              {title}
+              {!item.isFolder && (
+                <input
+                  type="checkbox"
+                  className="delete-checkbox"
+                  checked={checkedItems.includes(item.index as string)}
+                  onClick={(e) => e.stopPropagation()}
+                  onChange={(e) => handleCheckboxChange(item.index as string, e.target.checked)}
+                />
+              )}
+              <span className="file-item-text">{title}</span>
             </div>
           )}
         >
           <Tree treeId='fileSystem' rootItem='root' treeLabel='File System' />
         </ControlledTreeEnvironment>
-        <div>
-          <p className='instruction-p'>
-            {t('Press')} <span className='button-text'>Delete</span>{' '}
-            {t('Delete Item')}
-          </p>
-          <p className='instruction-p'>
-            {t('Press')} <span className='button-text'>Shift+R</span>{' '}
-            {t('Rename Item')}
-          </p>
+      </div>
+
+      <div className='file-system-footer'>
+        <div className='footer-instruction'>
+          <span>{t('Delete')}</span> 
+          <kbd>Del</kbd>
+        </div>
+        <div className='footer-instruction'>
+          <span>{t('Rename')}</span> 
+          <kbd>Shift+R</kbd>
         </div>
       </div>
+
       <ErrorModal
         open={errorModalOpen}
         onClose={() => setErrorModalOpen(false)}
       >
         {errorModalContent}
       </ErrorModal>
-
-      {/* REMOVED: ContextMenu and ArchiveActionsPopup rendering */}
     </div>
   );
 }

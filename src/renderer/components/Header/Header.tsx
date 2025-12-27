@@ -6,16 +6,18 @@ import { Tag, TagProps } from './Tag';
 import AddTag from './AddTag';
 import WindowControls from '@misc/window/components/WindowControls';
 import { useGeneralContext } from '@components/GeneralContext';
-// [REMOVED] import Search from './Search';
 
 const Header = () => {
-  const allTags = JSON.parse(localStorage.getItem('all-tags'));
+  // FIX: Default to empty array if null to prevent crash
+  const allTags = JSON.parse(localStorage.getItem('all-tags') || '[]');
+  
   const { selectedFile, currentFileTags, setCurrentFileTags, currentOS } = useGeneralContext();
   const [currentFilePath, setCurrentFilePath] = useState('');
 
   useEffect(() => {
     setCurrentFilePath(selectedFile);
-    setCurrentFileTags([])
+    // Tags are cleared here, but useFileSaveLoad will repopulate them when the file loads
+    setCurrentFileTags([]);
   }, [selectedFile]);
 
   return (
@@ -30,16 +32,29 @@ const Header = () => {
           </div>
 
           <div className="header-center">
-            {/* [REMOVED] <Search /> */}
+            {/* Search removed */}
           </div>
 
           <div className="header-right">
             <div className='tags'>
-              {currentFileTags
+              {currentFileTags && Array.isArray(currentFileTags)
                 ? currentFileTags.map((tag: string) => {
+                    // FIX: Robust lookup
                     const foundTag = allTags.find(
-                      (searchTag: TagProps) => searchTag.text == tag,
+                      (searchTag: TagProps) => searchTag.text === tag,
                     );
+                    
+                    // FIX: Fallback if tag definition is missing (prevents crash)
+                    if (!foundTag) {
+                        return (
+                             <Tag
+                                key={`tag-${tag}`}
+                                text={tag}
+                                color={'0'} // Default Red
+                              />
+                        )
+                    }
+
                     return (
                       <Tag
                         key={`tag-${foundTag.text}`}

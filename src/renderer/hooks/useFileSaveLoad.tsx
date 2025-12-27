@@ -28,45 +28,48 @@ export function useFileSaveLoad(
   useEffect(
     function loadFile() {
       if (selectedFile) window.api.loadX(selectedFile);
-      window.api.receive('gotLoadedDataX', (data: string) => {
+      
+      const handleLoadedData = (data: string) => {
         if (!data) {
           setEmptyPage();
           return;
         }
 
-        const parsedData = JSON.parse(data);
+        try {
+            const parsedData = JSON.parse(data);
+            const blocksData: BlockElement[] = parsedData.blocks;
 
-        const blocksData: BlockElement[] = parsedData.blocks;
-        parsedData.tags
-          ? setCurrentFileTags(JSON.parse(data).tags)
-          : setCurrentFileTags([]);
+            // FIX: Ensure tags are loaded as an array (prevents crash on old files)
+            setCurrentFileTags(parsedData.tags || []);
 
-        if (!Array.isArray(blocksData)) {
-          setEmptyPage();
-          return;
+            if (!Array.isArray(blocksData)) {
+              setEmptyPage();
+              return;
+            }
+
+            blocksData.map((block: BlockElement) => {
+              if (block.y == null) block.y = Infinity;
+              if (block.x == null) block.x = Infinity;
+            });
+
+            setStateFunction((prev: { items: BlockElement[] }) => ({
+              ...prev,
+              items: blocksData,
+            }));
+
+            let newData: object[] = blocksData;
+            newData = newData.map((block: BlockElement) => {
+              return { id: block.i, metaData: block.metaData };
+            });
+
+            setAllBlockValues(newData);
+        } catch (e) {
+            console.error("File parse error:", e);
+            setEmptyPage();
         }
+      };
 
-        blocksData.map((block: BlockElement) => {
-          if (block.y == null) {
-            block.y = Infinity;
-          }
-          if (block.x == null) {
-            block.x = Infinity;
-          }
-        });
-
-        setStateFunction((prev: { items: BlockElement[] }) => ({
-          ...prev,
-          items: blocksData,
-        }));
-
-        let newData: object[] = blocksData;
-        newData = newData.map((block: BlockElement) => {
-          return { id: block.i, metaData: block.metaData };
-        });
-
-        setAllBlockValues(newData);
-      });
+      window.api.receive('gotLoadedDataX', handleLoadedData);
     },
     [selectedFile],
   );
@@ -89,14 +92,13 @@ export function useFileSaveLoad(
   );
 
   const saveMetaDataPerBlock = (block: BlockElement) => {
-    const found = allBlockValues.find(
-      blockState => blockState.id == block.i,
-    ).metaData;
-
-    block.metaData = {
-      content: found.content,
-      blockStateFunction: () => null,
-    };
+    const foundBlock = allBlockValues.find(blockState => blockState.id == block.i);
+    if (foundBlock && foundBlock.metaData) {
+        block.metaData = {
+          content: foundBlock.metaData.content,
+          blockStateFunction: () => null,
+        };
+    }
   };
 
   const saveGridDataToFile = () => {
@@ -105,7 +107,7 @@ export function useFileSaveLoad(
 
     const fileData: FileStructure = {
       blocks: currentItems,
-      tags: currentFileTags,
+      tags: currentFileTags, // This captures the tags you just added/removed
       mathMemory: {},
     };
 

@@ -1,9 +1,41 @@
 @import '~react-complex-tree/lib/style-modern.css';
 @import '../Theme.scss';
 
+// --- CONFIGURATION ---
+:root {
+  --rct-item-level-padding: 20px;
+}
+
+.rct-tree-item-arrow {
+  display: none !important;
+}
+
 #main-app.rtl .rct-tree-item-title-container {
   margin-inline-end: 10px !important;
   margin-inline-start: unset !important;
+}
+
+@mixin premium-tooltip {
+  content: attr(data-tooltip);
+  position: fixed;
+  z-index: 1000;
+  margin-top: 38px;
+  background-color: var(--button-bgcolor);
+  color: hsla(var(--app-text-color), 1);
+  font-family: 'Rubik2', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(-4px);
+  animation: tooltip-slide 0.2s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
 }
 
 .file-system {
@@ -13,86 +45,121 @@
   height: 100%;
   min-width: 190px;
   max-width: 230px;
+  box-sizing: border-box;
+  background-color: color-mix(in srgb, var(--tool-color) 8%, #050505 92%);
 
   .file-system-header {
     display: flex;
     flex-direction: row;
+    flex-wrap: nowrap;
     direction: var(--app-direction);
-    height: max-content;
-    padding-bottom: 10px;
-    padding-top: 3px;
+    height: 40px;
+    padding: 0 12px;
     align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid color-mix(in srgb, var(--border-color), transparent 50%);
+    margin-bottom: 5px;
+    flex-shrink: 0;
 
     .file-system-header-title {
       cursor: alias;
-      color: hsla(var(--app-text-color), 0.6);
+      color: hsla(var(--app-text-color), 0.8);
       white-space: nowrap;
-      font-size: 21px;
+      font-size: 18px;
       font-weight: 700;
-      width: 100%;
+      flex: 1;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-right: 8px;
+      letter-spacing: -0.5px;
 
       &:hover::after {
-        content: attr(data-tooltip);
-        color: hsla(var(--app-text-color), 1);
-        font-size: 14px;
-        font-weight: 400;
-        min-width: max-content;
-        position: fixed;
-        margin-top: 40px;
-        margin-inline-start: -130px;
-        z-index: 1000;
-        padding: 6px 10px 6px 10px;
-        background-color: var(--button-bgcolor);
-        text-shadow: none;
-        border: 1px solid var(--page-border);
-        border-radius: 6px;
-        opacity: 0%;
-        animation: tooltip 0.1s ease-in-out 0.2s forwards;
+        @include premium-tooltip;
+        margin-left: 10px;
       }
     }
 
     .file-system-header-buttons {
-      border-radius: 10px;
       display: flex;
-      flex-direction: row;
-      direction: var(--app-direction);
-      width: max-content;
+      align-items: center;
       gap: 3px;
 
+      .separator {
+        width: 1px;
+        height: 10px;
+        background-color: var(--border-color);
+        opacity: 0.6;
+        margin: 0 1px !important;
+        display: inline-block;
+      }
+
       button {
-        background: none;
-        padding: 5px !important;
+        background: transparent;
+        padding: 0;
+        height: 24px;
+        width: 24px;
         color: var(--tool-color);
-        transition: 0.1s;
+        transition: background-color 0.15s ease, color 0.15s ease;
+        border-radius: 5px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        cursor: pointer;
+        position: relative;
+        outline: none !important;
+
+        animation: fadeIn 0.2s ease-out;
 
         &:hover {
-          background: none;
+          background-color: var(--hover-color);
           color: var(--button-color);
+          transform: translateY(-1px);
 
           &::after {
-            content: attr(data-tooltip);
-            color: hsla(var(--app-text-color), 1);
-            min-width: max-content;
-            position: fixed;
-            margin-top: 80px;
-            z-index: 1000;
-            padding: 6px 10px 6px 10px;
-            background-color: var(--button-bgcolor);
-            text-shadow: none;
-            border: 1px solid var(--page-border);
-            border-radius: 6px;
-            opacity: 0%;
-            animation: tooltip 0.1s ease-in-out 0.2s forwards;
+            @include premium-tooltip;
           }
         }
 
         &:active {
-          transform: scale(0.92);
+          transform: scale(0.95);
         }
 
         i {
-          font-size: 18px;
-          height: 18px;
+          font-size: 14px;
+          display: flex;
+          align-items: center;
+        }
+
+        &.active-delete-mode {
+          color: #ff4d4d !important;
+          background-color: rgba(255, 77, 77, 0.1) !important;
+        }
+
+        &.confirm-delete-btn {
+          width: 51px !important;
+          color: #00e676 !important;
+          background-color: rgba(0, 230, 118, 0.1);
+          margin-right: 0;
+          gap: 6px;
+
+          .count-badge {
+            font-size: 10px;
+            font-weight: 700;
+            font-family: monospace;
+          }
+        }
+
+        &:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+          filter: grayscale(100%);
+          transform: none !important;
+
+          &::after {
+            display: none;
+          }
         }
       }
     }
@@ -103,92 +170,118 @@
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    min-width: inherit;
-    max-width: inherit;
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
 
     .rct-tree-root {
-      height: 90%;
+      height: auto;
 
       [role='tree'] {
-        height: inherit;
-
-        & > .rct-tree-items-container {
-          height: inherit;
-
+        &>.rct-tree-items-container {
           [role='treeitem'] {
-            input {
-              text-shadow: none;
-              font-family: 'Rubik2', 'NotoSansArabic';
-              font-size: 16px;
-              height: 40px;
-            }
-
             .rct-tree-item-title-container {
-              margin-inline-start: 10px;
-              margin-inline-end: unset;            
-              padding-inline-end: 10px !important;
               padding-right: 0px !important;
-              padding-left: 0px !important;
+
+              .rct-tree-item-title {
+                display: flex !important;
+                align-items: center !important;
+                width: 100%;
+                overflow: hidden !important;
+
+                .delete-checkbox {
+                  appearance: none;
+                  -webkit-appearance: none;
+                  width: 0;
+                  height: 16px;
+                  border: 0;
+                  margin: 0;
+                  opacity: 0;
+                  pointer-events: none;
+                  border-radius: 4px;
+                  cursor: pointer;
+                  display: grid;
+                  place-content: center;
+                  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                    opacity 0.2s ease,
+                    margin 0.3s ease;
+                  flex-shrink: 0;
+
+                  &:checked {
+                    background-color: #ff4d4d;
+                    border-color: #ff4d4d;
+
+                    &::after {
+                      content: '✕';
+                      font-size: 10px;
+                      color: white;
+                      font-weight: bold;
+                    }
+                  }
+                }
+
+                .file-item-text {
+                  flex: 1;
+                  min-width: 0;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
+                  white-space: nowrap;
+                }
+              }
 
               .rct-tree-item-button {
+                display: flex !important;
+                align-items: center !important;
+                gap: 8px !important;
+                min-width: 0;
                 overflow: hidden;
-                min-width: inherit;
-                text-overflow: ellipsis;
-                white-space: nowrap;
-                height: 100%;
-                direction: var(--app-direction);
-                background-color: transparent;
-                color: hsla(var(--app-text-color), 1);
-                border-radius: 10px;
-                text-shadow: none;
+                height: 32px;
+                background-color: transparent !important;
+                color: hsla(var(--app-text-color), 0.7);
+                border-radius: 0 6px 6px 0;
                 font-family: 'Rubik2', 'NotoSansArabic';
-                font-size: 16px;
-                height: 40px;
-                flex-direction: row;
-                justify-content: flex-start;
-                padding-inline-start: 10px;
-                // direction: ltr;
-                // padding: 0 var(--rct-item-padding) 0
-                //   calc(
-                //     var(--rct-item-padding) + var(--rct-arrow-container-size) +
-                //       var(--rct-arrow-padding)
-                //   );
-                // margin-right: calc(-1 * var(--rct-arrow-size));
-                // margin-left: calc(-1 * var(--rct-arrow-size));
-                // padding-right: 12px;
-                cursor: var(--rct-cursor);
-                transition: color 100ms ease-out,
-                  background-color 100ms ease-out, font-weight 100ms ease-in;
+                font-size: 14px;
+                padding-inline-start: 8px;
+                transition: all 0.1s ease;
+                flex: 1;
+                outline: none !important;
+                box-shadow: none !important;
+                border-left: 3px solid transparent;
 
                 &:hover {
-                  background-color: var(--file-hover-bgcolor);
+                  background-color: var(--file-hover-bgcolor) !important;
                   color: hsla(var(--app-text-color), 1);
                 }
 
-                &:active {
-                  background-color: var(--file-active-bgcolor);
+                &.rct-tree-item-button-focused {
+                  border-left: 3px solid var(--tool-color) !important;
+                  background: linear-gradient(90deg,
+                      color-mix(in srgb, var(--tool-color) 12%, transparent),
+                      transparent) !important;
+                  color: hsla(var(--app-text-color), 1);
+                  font-weight: 600;
+                }
+
+                &.rct-tree-item-button-expanded {
+                  font-weight: 600;
                   color: hsla(var(--app-text-color), 1);
                 }
 
                 &::before {
-                  // Override
-                  position: unset;
-                  top: unset;
-                  left: unset;
-                  height: unset;
-                  width: unset;
-                  background-color: unset;
-                  border-radius: unset;
-
-                  // Custom
-                  color: var(--tool-color);
                   font-family: 'uicons-regular-rounded';
                   font-weight: 300;
-                  font-size: large;
+                  font-size: 16px;
                   content: '\f35d';
-                  padding-inline-end: 10px !important;
-
-                  // padding-left: 10px;
+                  color: hsla(var(--app-text-color), 0.7);
+                  background: none !important;
+                  position: relative !important;
+                  display: block !important;
+                  width: 18px !important;
+                  height: 18px !important;
+                  text-align: center;
+                  flex-shrink: 0 !important;
+                  margin: 0 !important;
                 }
 
                 &.rct-tree-item-button-isFolder {
@@ -196,116 +289,103 @@
                     display: none;
                   }
 
-                  &.rct-tree-item-button-expanded {
-                    &::before {
-                      font-family: 'uicons-regular-rounded';
-                      font-weight: 300;
-                      font-size: large;
-                      content: '\f1de';
-                    }
+                  &.rct-tree-item-button-expanded::before {
+                    content: '\f1de';
+                    color: hsla(var(--app-text-color), 1);
                   }
 
                   &::before {
-                    font-family: 'uicons-regular-rounded';
-                    font-weight: 300;
-                    font-size: large;
                     content: '\f1e6';
                   }
                 }
               }
-
-              .rct-tree-item-button-focused {
-                background-color: var(--selected-transparent);
-              }
-
-              .rct-tree-item-button-expanded {
-                background-color: var(--selected-bgcolor);
-                color: hsla(var(--app-text-color), 1);
-                font-weight: 700;
-
-                &:hover {
-                  background-color: var(--selected-hover-bgcolor);
-                }
-
-                &:active {
-                  background-color: var(--selected-active-bgcolor);
-                }
-              }
-
-              .rct-tree-item-arrow {
-                display: none;
-              }
-            }
-
-            [role='group'] {
-              height: fit-content;
-              // padding-top: 10px;
-              padding-inline-start: 20px;
             }
           }
         }
       }
     }
+  }
 
-    .instruction-p {
-      color: hsla(var(--app-text-color), 0.6);
-      font-size: smaller;
-      .button-text {
-        background-color: var(--selected-bgcolor);
+  // --- UPDATED FOOTER (No Highlighted Backgrounds) ---
+  // --- UPDATED FOOTER (Perfectly Aligned) ---
+  // --- UPDATED FOOTER (Straight Line Alignment) ---
+  .file-system-footer {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 12px 16px; // Comfortable padding
+
+    background-color: transparent;
+    border-top: 1px solid color-mix(in srgb, var(--border-color), transparent 80%);
+
+    flex-shrink: 0;
+
+    .footer-instruction {
+      display: flex;
+      // CRITICAL FIX: 'baseline' ensures text sits on the exact same line
+      align-items: baseline;
+      gap: 8px;
+
+      span {
+        font-size: 11px; // Slight bump for readability
+        font-weight: 500;
+        color: hsla(var(--app-text-color), 0.5);
+        // Let line-height be natural so baseline works
+        line-height: 1.4;
+      }
+
+      kbd {
+        display: inline-block; // Behaves like text for baseline alignment
+        background-color: transparent;
+        border: 1px solid color-mix(in srgb, var(--border-color), transparent 60%);
+        border-radius: 4px;
+
+        // Remove fixed height so it hugs the text
         padding: 2px 6px;
-        border-radius: 15px;
+
+        font-family: 'Rubik2', monospace;
+        font-size: 11px; // Match label size
+        font-weight: 600;
+        color: hsla(var(--app-text-color), 0.8);
+        box-shadow: none;
+
+        // Reset line-height to ensure text isn't offset inside the box
+        line-height: 1.4;
       }
     }
   }
 }
 
-@keyframes tooltip {
+.file-system.delete-mode {
+  .delete-checkbox {
+    width: 16px !important;
+    margin-right: 8px !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    border: 1.5px solid var(--tool-color) !important;
+  }
+}
+
+@keyframes tooltip-slide {
   from {
-    transform: scale(0.95);
-    opacity: 0%;
-    box-shadow: 0px 1px 3px #00000000;
+    transform: translateY(-5px);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes popIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0.8;
   }
 
   to {
     transform: scale(1);
-    opacity: 100%;
-    box-shadow: 0px 1px 3px #0000002a;
+    opacity: 1;
   }
-}
-// ... (keep all your existing styles for .file-system, etc.)
-
-.file-system-header {
-  // This will push the title and buttons to opposite ends
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  .file-system-header-buttons {
-    display: flex;
-    align-items: center;
-    gap: 16px; // Adds space between the archive button and the new group
-
-    .button-group {
-      display: flex;
-      // Creates the visual grouping for add file/folder buttons
-      border: 1px solid var(--color-border);
-      border-radius: 6px;
-      overflow: hidden;
-
-      button {
-        border: none;
-        border-radius: 0;
-        // Adds a separator line between the two buttons
-        &:first-child {
-          border-right: 1px solid var(--color-border);
-        }
-      }
-    }
-    
-    // Styles the new standalone archive button
-    > button {
-        border: 1px solid var(--color-border);
-        border-radius: 6px;
-    }
-  }       
 }

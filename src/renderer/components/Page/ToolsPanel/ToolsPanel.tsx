@@ -6,7 +6,7 @@ import { WidgetType } from '@renderer/common/types';
 import { useTranslation } from 'react-i18next';
 
 const ToolsPanel = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   // --- 1. REMOVE setIsChatBotOpen FROM HERE ---
   const { setNewWidgetRequest, setClearPageRequest, setSaveRequest } = useGeneralContext();
 

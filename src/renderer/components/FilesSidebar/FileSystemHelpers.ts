@@ -24,7 +24,6 @@ export const draggedToTheSameParent = (
   return draggedToSameParent;
 };
 
-// --- FIX STARTS HERE ---
 export const getFileNameFromPath = (path: string) => {
   // robustly split by "/" or "\" to get the filename
   const fileNameWithExt = path.split(/[/\\]/).pop() || '';
@@ -37,7 +36,9 @@ export const changeItemPath = (prev: TreeItemsObj, item: MathTreeItem, newPath: 
 
   window.api.move(oldPath, newPath);
 
-  const { [oldPath]: _, ...rest } = prev;
+  // FIX: Removed unused variable '_' by using delete on a clone
+  const rest = { ...prev };
+  delete rest[oldPath];
   
   // Calculate the new display name
   const newData = getFileNameFromPath(newPath);
@@ -48,22 +49,18 @@ export const changeItemPath = (prev: TreeItemsObj, item: MathTreeItem, newPath: 
       ...item,
       index: newPath,
       path: newPath,
-      data: newData, // <--- CRITICAL FIX: Update the display name
+      data: newData, 
     },
   }
 
   return newState;
 };
-// --- FIX ENDS HERE ---
-
-// ... (Keep the rest of the file: addItemToNewParent, updateItemsPosition, etc. exactly as they were) ...
 
 export const addItemToNewParent = (
   target: DraggingPositionItem | DraggingPositionBetweenItems,
   prev: TreeItemsObj,
   item: MathTreeItem,
 ) => {
-  // ... (existing code) ...
   if (target.targetType != 'item') {
     const newPath = prev[target.parentItem].path +
     '\\' +
@@ -186,7 +183,8 @@ export const generateStateWithNewFile = (
     [newFilePath]: {
       index: newFilePath,
       data: newFileName,
-      children: [] as Array<any>,
+      // FIX: Replaced explicit 'any' with correct type
+      children: [] as TreeItemIndex[],
       path: newFilePath,
       isFolder: false,
     },

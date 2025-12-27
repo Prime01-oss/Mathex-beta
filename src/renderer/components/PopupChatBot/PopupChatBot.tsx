@@ -11,6 +11,7 @@ import 'katex/dist/katex.min.css';
 type Message = {
   sender: 'user' | 'ai';
   text: string;
+  attachment?: { name: string; type: string }; // Track attachment metadata
   timestamp: string;
 };
 
@@ -19,113 +20,122 @@ const PopupChatBot: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([
     { 
       sender: 'ai', 
-      text: "Hello! I am your Math Buddy. How can I help?",
+      text: "Hello! I'm your Math Buddy. Upload a file or ask me anything.",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
   ]);
   const [currentInput, setCurrentInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<File | null>(null);
   
   // Refs
   const chatLogRef = useRef<HTMLDivElement>(null);
   const windowRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- WINDOW STATE (Size & Position) ---
-  const [size, setSize] = useState({ width: 450, height: 650 });
-  const [position, setPosition] = useState({ x: window.innerWidth - 500, y: window.innerHeight - 700 });
+  // --- WINDOW STATE ---
+  const [size, setSize] = useState({ width: 400, height: 600 });
+  const [position, setPosition] = useState({ x: window.innerWidth - 450, y: window.innerHeight - 650 });
 
   // Auto-scroll
   useEffect(() => {
     if (chatLogRef.current) {
       chatLogRef.current.scrollTop = chatLogRef.current.scrollHeight;
     }
-  }, [messages, isLoading]);
+  }, [messages, isLoading, attachedFile]);
 
-  // --- DRAGGABLE LOGIC ---
-  const dragRef = useRef<{ isDragging: boolean; startX: number; startY: number; initialLeft: number; initialTop: number } | null>(null);
-
-  const handleDragStart = (e: React.MouseEvent) => {
-    if (!windowRef.current) return;
-    dragRef.current = {
-      isDragging: true,
-      startX: e.clientX,
-      startY: e.clientY,
-      initialLeft: position.x,
-      initialTop: position.y
-    };
-    document.addEventListener('mousemove', handleDragging);
-    document.addEventListener('mouseup', handleDragEnd);
+  // --- FILE HANDLING ---
+  const handleFileClick = () => {
+    fileInputRef.current?.click();
   };
 
-  const handleDragging = (e: MouseEvent) => {
-    if (!dragRef.current?.isDragging) return;
-    const dx = e.clientX - dragRef.current.startX;
-    const dy = e.clientY - dragRef.current.startY;
-    setPosition({ x: dragRef.current.initialLeft + dx, y: dragRef.current.initialTop + dy });
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setAttachedFile(e.target.files[0]);
+    }
   };
 
-  const handleDragEnd = () => {
-    if (dragRef.current) dragRef.current.isDragging = false;
-    document.removeEventListener('mousemove', handleDragging);
-    document.removeEventListener('mouseup', handleDragEnd);
+  const clearAttachment = () => {
+    setAttachedFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  // --- RESIZABLE LOGIC ---
-  const resizeRef = useRef<{ isResizing: boolean; startX: number; startY: number; initialW: number; initialH: number } | null>(null);
-
-  const handleResizeStart = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    resizeRef.current = {
-      isResizing: true,
-      startX: e.clientX,
-      startY: e.clientY,
-      initialW: size.width,
-      initialH: size.height
-    };
-    document.addEventListener('mousemove', handleResizing);
-    document.addEventListener('mouseup', handleResizeEnd);
-  };
-
-  const handleResizing = (e: MouseEvent) => {
-    if (!resizeRef.current?.isResizing) return;
-    const dx = e.clientX - resizeRef.current.startX;
-    const dy = e.clientY - resizeRef.current.startY;
-    setSize({
-      width: Math.max(350, resizeRef.current.initialW + dx),
-      height: Math.max(450, resizeRef.current.initialH + dy)
-    });
-  };
-
-  const handleResizeEnd = () => {
-    if (resizeRef.current) resizeRef.current.isResizing = false;
-    document.removeEventListener('mousemove', handleResizing);
-    document.removeEventListener('mouseup', handleResizeEnd);
-  };
-
-  // --- SEND MESSAGE ---
+  // --- SEND LOGIC ---
   const handleSubmit = useCallback(async (e: FormEvent) => {
     e.preventDefault();
-    const prompt = currentInput.trim();
-    if (!prompt || isLoading) return;
+    if ((!currentInput.trim() && !attachedFile) || isLoading) return;
 
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setMessages(prev => [...prev, { sender: 'user', text: prompt, timestamp }]);
+    let promptToSend = currentInput.trim();
+    
+    // --- FIX: Explicitly type this variable ---
+    let displayAttachment: { name: string; type: string } | undefined;
+
+    // 1. READ FILE CONTENT (If attached)
+    if (attachedFile) {
+      try {
+        const fileContent = await attachedFile.text(); // Read file as text
+        promptToSend += `\n\n--- [ANALYZING FILE: ${attachedFile.name}] ---\n${fileContent}\n--- [END FILE] ---`;
+        
+        displayAttachment = { name: attachedFile.name, type: 'file' };
+      } catch (err) {
+        console.error("Failed to read file", err);
+      }
+    }
+
+    // 2. UPDATE UI IMMEDIATELY
+    setMessages(prev => [...prev, { 
+      sender: 'user', 
+      text: currentInput, 
+      attachment: displayAttachment,
+      timestamp 
+    }]);
+    
     setCurrentInput('');
+    setAttachedFile(null);
     setIsLoading(true);
 
+    // 3. SEND TO AI
     try {
-      const aiResponseText = await window.api.getAIResponse(prompt);
+      const aiResponseText = await window.api.getAIResponse(promptToSend);
       setMessages(prev => [...prev, { 
         sender: 'ai', 
         text: aiResponseText, 
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
       }]);
     } catch (error) {
-      setMessages(prev => [...prev, { sender: 'ai', text: "Error: Could not connect to AI.", timestamp: new Date().toLocaleTimeString() }]);
+      setMessages(prev => [...prev, { sender: 'ai', text: "Error: Connection failed.", timestamp: new Date().toLocaleTimeString() }]);
     } finally {
       setIsLoading(false);
     }
-  }, [currentInput, isLoading]);
+  }, [currentInput, attachedFile, isLoading]);
+
+  // --- DRAGGABLE/RESIZABLE LOGIC ---
+  const dragRef = useRef<{ isDragging: boolean; startX: number; startY: number; initialLeft: number; initialTop: number } | null>(null);
+  const handleDragStart = (e: React.MouseEvent) => {
+    if (!windowRef.current) return;
+    dragRef.current = { isDragging: true, startX: e.clientX, startY: e.clientY, initialLeft: position.x, initialTop: position.y };
+    document.addEventListener('mousemove', handleDragging);
+    document.addEventListener('mouseup', handleDragEnd);
+  };
+  const handleDragging = (e: MouseEvent) => {
+    if (!dragRef.current?.isDragging) return;
+    setPosition({ x: dragRef.current.initialLeft + (e.clientX - dragRef.current.startX), y: dragRef.current.initialTop + (e.clientY - dragRef.current.startY) });
+  };
+  const handleDragEnd = () => { if (dragRef.current) dragRef.current.isDragging = false; document.removeEventListener('mousemove', handleDragging); document.removeEventListener('mouseup', handleDragEnd); };
+
+  const resizeRef = useRef<{ isResizing: boolean; startX: number; startY: number; initialW: number; initialH: number } | null>(null);
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    resizeRef.current = { isResizing: true, startX: e.clientX, startY: e.clientY, initialW: size.width, initialH: size.height };
+    document.addEventListener('mousemove', handleResizing);
+    document.addEventListener('mouseup', handleResizeEnd);
+  };
+  const handleResizing = (e: MouseEvent) => {
+    if (!resizeRef.current?.isResizing) return;
+    setSize({ width: Math.max(350, resizeRef.current.initialW + (e.clientX - resizeRef.current.startX)), height: Math.max(450, resizeRef.current.initialH + (e.clientY - resizeRef.current.startY)) });
+  };
+  const handleResizeEnd = () => { if (resizeRef.current) resizeRef.current.isResizing = false; document.removeEventListener('mousemove', handleResizing); document.removeEventListener('mouseup', handleResizeEnd); };
 
   return (
     <div 
@@ -142,15 +152,15 @@ const PopupChatBot: React.FC = () => {
           </div>
           <div className="info">
             <h3>Math Buddy</h3>
-            <span className="subtitle">Always active</span>
+            <span className="subtitle">AI Assistant</span>
           </div>
         </div>
         <button onClick={() => setIsChatBotOpen(false)} className="close-btn">×</button>
       </div>
 
-      {/* CHAT HISTORY */}
+      {/* CHAT BODY */}
       <div className="messenger-body" ref={chatLogRef}>
-        <div className="date-separator"><span>Today</span></div>
+        <div className="date-separator"><span>Session Started</span></div>
         
         {messages.map((msg, index) => (
           <div key={index} className={`message-row ${msg.sender}`}>
@@ -158,7 +168,15 @@ const PopupChatBot: React.FC = () => {
             
             <div className="bubble-wrapper">
               <div className="bubble">
-                {/* Renders LaTeX for BOTH User and AI */}
+                {/* ATTACHMENT INDICATOR */}
+                {msg.attachment && (
+                  <div className="attachment-indicator">
+                    <i className="fi fi-rr-document"></i>
+                    <span>{msg.attachment.name}</span>
+                  </div>
+                )}
+                
+                {/* MESSAGE TEXT */}
                 <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
                   {msg.text}
                 </ReactMarkdown>
@@ -171,20 +189,39 @@ const PopupChatBot: React.FC = () => {
         {isLoading && (
           <div className="message-row ai">
             <div className="msg-avatar-small">🤖</div>
-            <div className="bubble loading">
-              <span>•</span><span>•</span><span>•</span>
-            </div>
+            <div className="bubble loading"><span>•</span><span>•</span><span>•</span></div>
           </div>
         )}
       </div>
 
-      {/* FOOTER */}
+      {/* FOOTER INPUT AREA */}
       <div className="messenger-footer">
+        
+        {/* FILE PILL (Shows when file is attached) */}
+        {attachedFile && (
+          <div className="file-pill">
+            <i className="fi fi-rr-file"></i>
+            <span className="filename">{attachedFile.name}</span>
+            <button onClick={clearAttachment}><i className="fi fi-rr-cross-small"></i></button>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit}>
+          {/* FILE UPLOAD BUTTON */}
+          <button type="button" className="attach-btn" onClick={handleFileClick} title="Upload File">
+            <i className="fi fi-rr-clip"></i>
+          </button>
+          <input 
+            type="file" 
+            ref={fileInputRef} 
+            onChange={handleFileChange} 
+            style={{ display: 'none' }} 
+          />
+
           <textarea
             value={currentInput}
             onChange={(e) => setCurrentInput(e.target.value)}
-            placeholder="Type a math problem (e.g. Solve $x^2 + 2x + 1$)..."
+            placeholder={attachedFile ? "Ask about this file..." : "Type a math problem..."}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -192,7 +229,8 @@ const PopupChatBot: React.FC = () => {
               }
             }}
           />
-          <button type="submit" disabled={isLoading || !currentInput.trim()}>
+          
+          <button type="submit" className="send-btn" disabled={isLoading || (!currentInput.trim() && !attachedFile)}>
             <i className="fi fi-rr-paper-plane"></i>
           </button>
         </form>

@@ -133,7 +133,15 @@ ipcMain.on('newFolder', (event, folderPath) => {
 
 let firstTime = true;
 
-function buildTree(dir: string, root: any) {
+interface FileNode {
+  index: string;
+  data: string;
+  children: string[];
+  path: string;
+  isFolder?: boolean;
+}
+
+function buildTree(dir: string, root: Record<string, FileNode>) {
   const stats = fs.statSync(dir);
   let name = path.basename(dir).split('.')[0];
   let key = dir;
@@ -252,8 +260,8 @@ ipcMain.on('getArchive', () => {
 
   const allGroups = getAllGroups();
 
-  function removeDups(arr: any[]) {
-    const uniqueIds: any[] = [];
+  function removeDups(arr: string[]) {
+    const uniqueIds: string[] = [];
     const unique = arr.filter((element) => {
       const isDuplicate = uniqueIds.includes(element);
       if (!isDuplicate) {
@@ -262,10 +270,10 @@ ipcMain.on('getArchive', () => {
       }
       return false;
     });
-    return unique.map(
-      (groupTitle) => (groupTitle = { groupName: groupTitle, subGroups: [] as any[] }),
-    );
-
+    return unique.map((groupTitle) => ({
+      groupName: groupTitle,
+      subGroups: [] as Record<string, unknown>[],
+    }));
   }
 
   const finalArr = [];
@@ -283,7 +291,7 @@ ipcMain.on('getArchive', () => {
   appWindow.webContents.send('gotArchive', finalArr);
 });
 
-ipcMain.on('startSearch', (event, args) => {
+ipcMain.on('startSearch', () => {
   const filesPath = path.join(__dirname, '..', 'files');
   function getAllBlocks() {
     const allGroups = [];

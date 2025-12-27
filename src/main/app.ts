@@ -1,10 +1,5 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import { createAppWindow } from './appWindow';
-// [NOTE] fs and path were only used for archiving in this file. 
-// You can remove them if no other logic uses them, but I've kept them 
-// available just in case you add other file operations later.
-import fs from 'fs-extra';
-import path from 'path';
 import fetch from 'node-fetch';
 
 /** Handle creating/removing shortcuts on Windows when installing/uninstalling. */
@@ -44,8 +39,6 @@ ipcMain.on('new-file-request', () => {
   }
 });
 
-// [REMOVED] Archive-related IPC handlers were here.
-
 ipcMain.on('request-notebooks-refresh', () => {
   const window = BrowserWindow.getFocusedWindow();
   if (window) {
@@ -53,16 +46,60 @@ ipcMain.on('request-notebooks-refresh', () => {
   }
 });
 
-// --- NEW CHAT BOT HANDLER (USING LOCAL OLLAMA - PHI3) ---
+// --- ADVANCED AI HANDLER ---
 
-ipcMain.handle('get-ai-response', async (event, prompt: string) => {
+// 1. Define the "Brain" of the AI. 
+// This instructs the model exactly how to behave, format, and think.
+// --- ADVANCED AI HANDLER ---
+
+const SYSTEM_PROMPT = `
+You are **MathBuddy**, a professional mathematical engine.
+Your goal is to provide perfectly formatted, step-by-step solutions.
+
+### 1. STRICT LATEX RULES
+- **NEVER** write two equations on the same line.
+- **Inline Math:** Use single $ for variables/short terms (e.g. "Let $x=5$").
+- **Block Math:** Use double $$ for ALL main equations.
+
+### 2. MULTI-STEP FORMATTING (CRITICAL)
+When solving an equation step-by-step, you **MUST** use the 'aligned' environment inside block math.
+Format your steps exactly like this:
+
+$$
+\\begin{aligned}
+x^2 + 78 &= 234 \\\\
+x^2 &= 234 - 78 \\\\
+x^2 &= 156 \\\\
+x &= \\pm\\sqrt{156}
+\\end{aligned}
+$$
+
+**Do not** write "x^2 = 234 - 78 x^2 = 156". That is forbidden. Every step gets a new line.
+
+### 3. RESPONSE STRUCTURE
+1. **Goal:** Briefly state what we are finding.
+2. **Steps:** Use the aligned block above for the math.
+3. **Result:** State the final answer clearly using \\boxed{}.
+
+### EXAMPLE
+User: "Solve x + 5 = 10"
+You:
+To solve for $x$, we subtract 5 from both sides:
+$$
+\\begin{aligned}
+x + 5 &= 10 \\\\
+x &= 10 - 5 \\\\
+x &= 5
+\\end{aligned}
+$$
+Final Answer:
+$$ \\boxed{x = 5} $$
+`;
+ipcMain.handle('get-ai-response', async (_event, prompt: string) => {
   console.log('Main process received prompt:', prompt);
 
-  // 1. Point to your local Ollama instance
   const OLLAMA_URL = 'http://localhost:11434/api/generate';
-
-  // 2. Define the model as 'phi3'
-  const MODEL_NAME = 'phi3';
+  const MODEL_NAME = 'phi3'; 
 
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -71,18 +108,15 @@ ipcMain.handle('get-ai-response', async (event, prompt: string) => {
       headers: {
         'Content-Type': 'application/json',
       },
-
       body: JSON.stringify({
         model: MODEL_NAME,
-        prompt: `You are a helpful math assistant.
-                  Format Instructions:
-                  1. Use Markdown for text.
-                  2. Use LaTeX for ALL math equations.
-                  3. Wrap inline math in single dollar signs, e.g., $x^2$.
-                  4. Wrap block math in double dollar signs, e.g., $$ \\int x dx $$.
-  
-  Question: ${prompt}`,
-        stream: false
+        system: SYSTEM_PROMPT, 
+        prompt: prompt,
+        stream: false,
+        options: {
+          temperature: 0.1, 
+          top_p: 0.9,
+        }
       })
     });
 
@@ -92,9 +126,11 @@ ipcMain.handle('get-ai-response', async (event, prompt: string) => {
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data = await response.json() as any;
-
-    // 3. Ollama returns the text in a 'response' field
-    return data.response;
+    
+    // CHANGED: Use const instead of let
+    const cleanResponse = data.response.trim();
+    
+    return cleanResponse;
 
   } catch (error) {
     console.error('Local LLM Error:', error);

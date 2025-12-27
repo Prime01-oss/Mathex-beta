@@ -8,10 +8,11 @@ const resources = {
   hi: { translation: HI_TRANSLATION },
 };
 
+// eslint-disable-next-line import/no-named-as-default-member
 i18n.use(initReactI18next).init({
   resources,
   lng: 'en',
-  fallbackLng: ['en', 'he'],
+  fallbackLng: ['en', 'hi'],
   interpolation: {
     escapeValue: false,
   },
