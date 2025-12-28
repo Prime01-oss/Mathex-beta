@@ -8,11 +8,17 @@ import Page from './Page/Page';
 import ChalkBoard from './ChalkBoard/ChalkBoard';
 import ShortcutsModal from './common/Modals/ShortcutsModal';
 import PopupCalculator from './PopupCalculator/PopupCalculator';
-import PopupChatBot from './PopupChatBot/PopupChatBot'; // <--- 1. ADD THIS IMPORT
+import PopupChatBot from './PopupChatBot/PopupChatBot'; 
+import OctaveTerminal from './OctaveTerminal/OctaveTerminal'; // <--- IMPORT COMPONENT
 
 const AppContent = () => {
-  // <--- 2. ADD isChatBotOpen HERE ---
-  const { isChalkBoardOpen, isShortcutsModalOpen, isCalculatorOpen, isChatBotOpen } = useGeneralContext(); 
+  const { 
+      isChalkBoardOpen, 
+      isShortcutsModalOpen, 
+      isCalculatorOpen, 
+      isChatBotOpen,
+      isOctaveOpen // <--- IMPORT STATE
+  } = useGeneralContext(); 
 
   return (
     <div id='main-app'>
@@ -28,7 +34,8 @@ const AppContent = () => {
       {isChalkBoardOpen && <ChalkBoard />}
       {isShortcutsModalOpen && <ShortcutsModal />}
       {isCalculatorOpen && <PopupCalculator />}
-      {isChatBotOpen && <PopupChatBot />} {/* <--- 3. ADD THIS LINE */}
+      {isChatBotOpen && <PopupChatBot />}
+      {isOctaveOpen && <OctaveTerminal />} {/* <--- RENDER COMPONENT */}
     </div>
   );
 };

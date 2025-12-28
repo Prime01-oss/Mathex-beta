@@ -1,0 +1,98 @@
+.octave-fullscreen-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background-color: hsla(0, 0%, 5%, 0.85);
+  backdrop-filter: blur(5px);
+  z-index: 9999; // Ensure this is above all other app layers
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  .terminal-window {
+    width: 90vw;
+    height: 85vh;
+    background-color: var(--page-bgcolor); 
+    border: 1px solid var(--app-border-color);
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative; // Create a stacking context
+
+    .terminal-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      background-color: var(--panel-bgcolor);
+      border-bottom: 1px solid var(--app-border-color);
+      position: relative;
+      z-index: 100; // Force toolbar to be physically above the body
+      pointer-events: auto; // Ensure clicks are captured here
+      
+      .title {
+        font-weight: bold;
+        color: hsl(var(--theme-hue), 60%, 80%);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .controls {
+        display: flex;
+        gap: 8px;
+
+        button {
+          background-color: var(--button-bgcolor);
+          border: 1px solid var(--app-border-color);
+          color: #ccc;
+          padding: 6px 14px;
+          border-radius: 6px;
+          cursor: pointer !important; // Force the pointer cursor
+          font-size: 0.85rem;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          pointer-events: auto;
+
+          &:hover {
+            background-color: var(--button-hover-bgcolor);
+            color: white;
+          }
+
+          &.danger:hover {
+            background-color: var(--button-danger);
+            color: black;
+          }
+        }
+      }
+    }
+
+    .console-body {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background-color: #0f0f0f; 
+      color: #e0e0e0;
+      position: relative;
+      z-index: 10; // Lower than the toolbar
+
+      .line { white-space: pre-wrap; font-family: monospace; }
+      
+      .input-area {
+        display: flex;
+        margin-top: 10px;
+        .prompt { color: var(--app-accent-color); margin-right: 10px; font-weight: bold; }
+        input {
+          flex: 1;
+          background: transparent;
+          border: none;
+          color: #fff;
+          outline: none;
+          font-family: monospace;
+        }
+      }
+    }
+  }
+}

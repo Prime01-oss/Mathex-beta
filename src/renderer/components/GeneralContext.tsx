@@ -9,7 +9,7 @@ import { newWidgetRequest } from '@renderer/common/types';
 import i18n from '@common/i18n';
 import { Action, KBarProvider } from 'kbar';
 
-// ... (staticActions array is here) ...
+// 1. ADD 'octave' TO STATIC ACTIONS
 const staticActions: Action[] = [
   { id: 'preferences', name: 'Preferences' },
   { id: 'language', name: 'Language', parent: 'preferences' },
@@ -26,6 +26,14 @@ const staticActions: Action[] = [
   { id: 'black', name: 'Black', parent: 'color' },
   { id: 'light', name: 'Light', parent: 'theme' },
   { id: 'dark', name: 'Dark', parent: 'theme' },
+  // New Action
+  { 
+    id: 'octave', 
+    name: 'GNU Octave Terminal', 
+    shortcut: ['o'], // You can press 'o' in the command bar to trigger it
+    keywords: 'math matlab console terminal',
+    section: 'Tools' 
+  },
 ];
 
 const GeneralContext = createContext(null);
@@ -43,7 +51,8 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [isChalkBoardOpen, setIsChalkBoardOpen] = useState(false);
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
-  const [isChatBotOpen, setIsChatBotOpen] = useState(false); // <--- 1. ADD THIS LINE
+  const [isChatBotOpen, setIsChatBotOpen] = useState(false); 
+  const [isOctaveOpen, setIsOctaveOpen] = useState(false); 
   const [isRtl, setIsRtl] = useState(true);
   const [language, setLanguage] = useState(getDefaultLang());
   const [currentOS, setCurrentOS] = useState('');
@@ -58,10 +67,9 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
     return localStorage.getItem('color') || 'blue';
   });
 
-  // ... (setColor, setLang, isRtlLang, setTheme functions are here) ...
   const setColor = (name: string, hue?: number) => {
     localStorage.setItem('color', name);
-    setColorTheme(name); // Sync React state
+    setColorTheme(name); 
 
     const rootStyle = document.documentElement.style;
 
@@ -97,7 +105,6 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
     document.body.classList.toggle('dark-mode', isDark);
   };
 
-  // ... (dynamicActions mapping is here) ...
   const dynamicActions = staticActions.map(action => {
     const translatedAction = { ...action, name: i18n.t(action.name) };
     switch (action.id) {
@@ -112,11 +119,12 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
       case 'black': return { ...translatedAction, perform: () => setColor('black') };
       case 'light': return { ...translatedAction, perform: () => setTheme(0) };
       case 'dark': return { ...translatedAction, perform: () => setTheme(1) };
+      // 2. ADD PERFORM LOGIC HERE
+      case 'octave': return { ...translatedAction, perform: () => setIsOctaveOpen(true) };
       default: return translatedAction;
     }
   });
 
-  // ... (useEffect hooks are here) ...
   useEffect(() => {
     setTheme(darkTheme ? 1 : 0);
     setLang(language);
@@ -152,7 +160,8 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
         isShortcutsModalOpen, setIsShortcutsModalOpen,
         isChalkBoardOpen, setIsChalkBoardOpen,
         isCalculatorOpen, setIsCalculatorOpen,
-        isChatBotOpen, setIsChatBotOpen, // <--- 2. ADD THIS LINE
+        isChatBotOpen, setIsChatBotOpen, 
+        isOctaveOpen, setIsOctaveOpen, 
         searchQuery, setSearchQuery,
       }}
     >

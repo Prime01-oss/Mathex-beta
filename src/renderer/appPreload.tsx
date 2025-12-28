@@ -20,6 +20,7 @@ const api = {
       'gotArchive', 'gotUserColor', 'gotOS', 'openFiles', 'newFile', 'Save',
       'fromMain', 'Text', 'Graph', 'Math', 'Group', 'gotNotebooks',
       'toggleNotebooks', 'Search',
+      'octave-output' // <--- ADDED THIS CHANNEL
     ];
     if (validChannels.includes(channel)) {
       // 1. Create a named reference to the wrapper function
@@ -78,8 +79,13 @@ const api = {
     };
   },
 
-  // <--- ADD THIS FUNCTION FOR THE CHAT BOT ---
-  getAIResponse: (prompt: string) => ipcRenderer.invoke('get-ai-response', prompt)
+  // <--- CHAT BOT ---
+  getAIResponse: (prompt: string) => ipcRenderer.invoke('get-ai-response', prompt),
+
+  // <--- NEW OCTAVE FUNCTIONS ---
+  startOctave: () => ipcRenderer.send('start-octave-session'),
+  sendOctaveInput: (cmd: string) => ipcRenderer.send('octave-input', cmd),
+  stopOctave: () => ipcRenderer.send('stop-octave-session'),
 };
 
 // Securely expose the single 'api' object to the renderer process

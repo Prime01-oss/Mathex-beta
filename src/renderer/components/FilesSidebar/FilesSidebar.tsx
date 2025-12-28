@@ -15,7 +15,8 @@ const FilesSidebar: React.FC = () => {
     setIsChalkBoardOpen,
     setIsShortcutsModalOpen,
     setIsCalculatorOpen,
-    setIsChatBotOpen, // <--- 1. ADD THIS LINE
+    setIsChatBotOpen, 
+    setIsOctaveOpen, // <--- IMPORT SETTER
   } = useGeneralContext();
 
   return (
@@ -52,17 +53,24 @@ const FilesSidebar: React.FC = () => {
         <section id='bottom'>
           <SidebarButton
             title={t('Calculator')}
-            buttonType='mathPanel'
+            buttonType='calculator'
             icon='calculator'
             onClick={() => setIsCalculatorOpen((prev: boolean) => !prev)}
           />
 
-          {/* <--- 2. ADD THIS NEW BUTTON --- */}
           <SidebarButton
             title={t('Math Buddy')}
             buttonType='chatBot'
-            icon='brain' //
+            icon='brain' 
             onClick={() => setIsChatBotOpen((prev: boolean) => !prev)}
+          />
+          
+          {/* --- NEW OCTAVE BUTTON --- */}
+          <SidebarButton
+            title={t('GNU Octave')}
+            buttonType='octave' 
+            icon='code'  
+            onClick={() => setIsOctaveOpen(true)}
           />
 
         </section>

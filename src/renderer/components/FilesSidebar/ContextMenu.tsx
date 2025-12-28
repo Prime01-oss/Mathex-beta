@@ -62,6 +62,7 @@ const ContextMenu: React.FC<ContextMenuProps> = ({ x, y, onArchive, onClose }) =
               <i className='fi fi-rr-archive' />
               <span>{t('Archive')}</span>
             </button>
+  
             {/* You can add more buttons here in the future */}
             {/* <button className='context-menu-button delete' onClick={handleDeleteClick}>
               <i className='fi fi-rr-trash' />
