@@ -85,6 +85,7 @@ ipcMain.on('saveX', (event, data, filePath) => {
     fs.mkdirSync(filesPath, { recursive: true });
     fs.writeFileSync(path.join(filePath), data, 'utf-8');
   }
+  event.sender.send('notebooks-need-refresh');
 });
 
 ipcMain.on('loadX', (event, filePath) => {
@@ -139,6 +140,7 @@ interface FileNode {
   children: string[];
   path: string;
   isFolder?: boolean;
+  tags?: string[];
 }
 
 function buildTree(dir: string, root: Record<string, FileNode>) {
@@ -153,12 +155,30 @@ function buildTree(dir: string, root: Record<string, FileNode>) {
   }
 
   if (!stats.isDirectory()) {
+    // 1. Initialize empty tags
+    let tags: string[] = [];
+
+    // 2. If it's a JSON file, try to read the tags from it
+    if (path.extname(dir).toLowerCase() === '.json') {
+      try {
+        const fileContent = fs.readFileSync(dir, 'utf-8');
+        const parsed = JSON.parse(fileContent);
+        if (Array.isArray(parsed.tags)) {
+          tags = parsed.tags;
+        }
+      } catch (error) {
+        // Silently fail if file is corrupt or locked; tags will remain empty
+        console.warn(`Failed to read tags for ${name}:`, error);
+      }
+    }
+
     root[key] = {
       index: key,
       data: name,
       children: [],
       path: dir,
       isFolder: false,
+      tags: tags, // <--- 3. Assign the extracted tags here
     };
 
     return key;
@@ -178,7 +198,6 @@ function buildTree(dir: string, root: Record<string, FileNode>) {
 
   return key;
 }
-
 ipcMain.on('getNotebooks', () => {
   const filesPath = path.join(app.getPath('documents'), 'mathex', 'files');
   const welcomeFilePath = path.join(filesPath, "Welcome to mathex!.json");

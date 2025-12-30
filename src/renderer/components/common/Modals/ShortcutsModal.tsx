@@ -9,15 +9,33 @@ import MathView from 'react-math-view';
 import { Keybinding, InlineShortcutDefinition } from 'mathlive';
 
 // --- Type Definitions ---
+// We extend the type to allow our custom Text Block objects which look like Keybinding
+type SimpleKeybinding = { key: string; command: string };
+
 type ShortcutCategory = {
   title: string;
-  items: Keybinding[] | Record<string, InlineShortcutDefinition>;
+  items: Keybinding[] | Record<string, InlineShortcutDefinition> | SimpleKeybinding[];
 };
 type Categories = {
   [key: string]: ShortcutCategory;
 };
 
 // --- Data ---
+
+// Manually defined shortcuts for the Text Block (Slate)
+const TEXT_BLOCK_SHORTCUTS: SimpleKeybinding[] = [
+    { key: '# <space>', command: 'Heading 1' },
+    { key: '## <space>', command: 'Heading 2' },
+    { key: '### <space>', command: 'Heading 3' },
+    { key: '* <space>', command: 'Bullet List' },
+    { key: '[] <space>', command: 'Check List' },
+    { key: '> <space>', command: 'Block Quote' },
+    { key: '``` <space>', command: 'Code Block' },
+    { key: 'Ctrl+B', command: 'Bold' },
+    { key: 'Ctrl+I', command: 'Italic' },
+    { key: 'Ctrl+`', command: 'Inline Code' },
+];
+
 const shortcutCategories: Categories = {
   general: {
     title: 'General',
@@ -26,6 +44,10 @@ const shortcutCategories: Categories = {
   mathEditor: {
     title: 'Math Editor',
     items: ML_SHORTCUTS,
+  },
+  textEditor: {
+    title: 'Text Editor', // New Category
+    items: TEXT_BLOCK_SHORTCUTS,
   },
   navigation: {
     title: 'Navigation',
@@ -50,8 +72,11 @@ const ShortcutsModal: React.FC = () => {
   
   const filteredItems = useMemo(() => {
     if (!searchTerm) return shortcutCategories[activeCategory].items;
+    
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
     const currentItems = shortcutCategories[activeCategory].items;
+
+    // 1. Math Editor Logic (Object-based)
     if (activeCategory === 'mathEditor') {
       return Object.entries(currentItems as Record<string, InlineShortcutDefinition>).reduce((acc, [shortcut, definition]) => {
         const latexValue = typeof definition === 'string' ? definition : definition.value;
@@ -61,7 +86,10 @@ const ShortcutsModal: React.FC = () => {
         return acc;
       }, {} as Record<string, InlineShortcutDefinition>);
     }
-    return (currentItems as Keybinding[]).filter(binding =>
+
+    // 2. Standard List Logic (Array-based)
+    // Cast to array of {key, command} to handle both Keybinding and SimpleKeybinding
+    return (currentItems as Array<Keybinding | SimpleKeybinding>).filter(binding =>
       binding.command.toString().toLowerCase().includes(lowerCaseSearchTerm) ||
       binding.key.toLowerCase().includes(lowerCaseSearchTerm)
     );
@@ -73,11 +101,25 @@ const ShortcutsModal: React.FC = () => {
     });
   };
 
-  const renderShortcutItem = (key: string, command: string, shortcutKeys: string[]): JSX.Element => ( <div className="shortcut-item" key={key}><span className="shortcut-description">{command}</span><Shortcut shortcut={shortcutKeys} /></div> );
+  const renderShortcutItem = (key: string, command: string, shortcutKeys: string[]): JSX.Element => ( 
+      <div className="shortcut-item" key={key}>
+          <span className="shortcut-description">{command}</span>
+          <Shortcut shortcut={shortcutKeys} />
+      </div> 
+  );
+
   const renderMathShortcutItem = (shortcut: string, definition: InlineShortcutDefinition): JSX.Element | null => {
     const latexValue = typeof definition === 'string' ? definition : definition.value;
     if (latexValue.includes('begin{')) return null;
-    return ( <div className="shortcut-item" key={shortcut}><span className="shortcut-description">{latexValue.replace(/\\/g, '')}</span><div className="shortcut-keys-math"><kbd className='kbc-button'>{shortcut}</kbd><div className="math-symbol"><MathView value={latexValue} /></div></div></div> );
+    return ( 
+        <div className="shortcut-item" key={shortcut}>
+            <span className="shortcut-description">{latexValue.replace(/\\/g, '')}</span>
+            <div className="shortcut-keys-math">
+                <kbd className='kbc-button'>{shortcut}</kbd>
+                <div className="math-symbol"><MathView value={latexValue} /></div>
+            </div>
+        </div> 
+    );
   };
 
   const isFilterResultEmpty = (Array.isArray(filteredItems) && filteredItems.length === 0) || (!Array.isArray(filteredItems) && Object.keys(filteredItems).length === 0);
@@ -87,7 +129,10 @@ const ShortcutsModal: React.FC = () => {
       <div className='shortcuts-modal'>
         <div className='modal-header'>
           <h2>{t('Keyboard Shortcuts')}</h2>
-          <div className="shortcuts-search-bar"><i className="fi fi-rr-search"></i><input type="text" placeholder={t('Search shortcuts...')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} /></div>
+          <div className="shortcuts-search-bar">
+              <i className="fi fi-rr-search"></i>
+              <input type="text" placeholder={t('Search shortcuts...')} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
+          </div>
           <button onClick={handleClose} className='close-button'>&times;</button>
         </div>
         <div className='modal-body'>
@@ -105,13 +150,14 @@ const ShortcutsModal: React.FC = () => {
             </div>
             <div className={`shortcuts-list ${isPending ? 'loading' : ''}`}>
               {isFilterResultEmpty ? (
-                // Fixed: Escaped quotes using &quot;
                 <div className="no-results-message"><p>No shortcuts found for &quot;{searchTerm}&quot;</p></div>
               ) : (
                 <>
                   {activeCategory === 'mathEditor'
                     ? Object.entries(filteredItems as Record<string, InlineShortcutDefinition>).map(([shortcut, def]) => renderMathShortcutItem(shortcut, def))
-                    : (filteredItems as Keybinding[]).map((binding: Keybinding, index: number) => renderShortcutItem(`${activeCategory}-${index}`, binding.command.toString(), [binding.key]))
+                    : (filteredItems as Array<Keybinding | SimpleKeybinding>).map((binding, index) => 
+                        renderShortcutItem(`${activeCategory}-${index}`, binding.command.toString(), [binding.key])
+                      )
                   }
                 </>
               )}

@@ -3,8 +3,9 @@
 @import '../Grid.scss';
 @import "/node_modules/mafs/core.css";
 
-.block-content{
-    transition: 0.2s;
+.block-content {
+    // General Block Styling
+    transition: all 0.2s ease-in-out;
     width: 100%;
     display: flex;
     outline: 1px solid transparent;
@@ -14,8 +15,8 @@
     overflow-y: auto;
     overflow-x: hidden;
 
-    // Math
-    .math-field-element{
+    // --- 1. Math Block Styling ---
+    .math-field-element {
         --hue: var(--theme-hue);
         --selection-background-color: var(--math-block-selection-bg);
         --selection-color: var(--math-block-selection);
@@ -27,27 +28,31 @@
         display: flex;
         justify-content: center;
         background-color: var(--math-block-bgcolor);
-        &::part(content){
+        border-radius: 4px; // Slight radius for standalone math blocks
+
+        &::part(content) {
             margin-top: 5px;
         }
     }
 
-    // Text
-    .textbox{
+    // --- 2. Text Block Styling ---
+    .textbox {
         padding: 10px;
         color: hsla(var(--app-text-color), 1);
         width: 100%;
         height: inherit;
         overflow-wrap: anywhere !important;
         font-size: larger;
+        line-height: 1.5;
 
         p, h1, h2, h3, h4, h5, h6 {
-            &:first-child{
+            &:first-child {
                 margin-top: 0 !important;
             }
         }
 
-        [role="math"]{
+        // Math inside Text Blocks
+        [role="math"] {
             --hue: var(--theme-hue);
             --selection-background-color: var(--math-block-selection-bg);
             --selection-color: var(--math-block-selection);
@@ -59,16 +64,17 @@
             display: flex;
             justify-content: center;
             background-color: var(--math-block-bgcolor);
-            &::part(content){
+
+            &::part(content) {
                 margin-top: 5px;
             }
         }
     }
-    
-    // Divider
-    &:has(.pageDivider){
+
+    // --- 3. Divider Styling ---
+    &:has(.pageDivider) {
         background: gray;
-        opacity: 40%;
+        opacity: 0.4;
         direction: var(--app-direction);
         margin-right: 0px;
         max-width: 100%;
@@ -79,74 +85,190 @@
         align-self: center;
     }
 
-    // Graph
+    // --- 4. Graph Block Styling (Polished) ---
     .graph-block-wrapper {
         width: 100%;
         height: 100%;
         display: flex;
-        flex-direction: column-reverse;
-        justify-content: space-between;
-    
-        .math-field-element{
-            border-top: 1px solid var(--tool-hover-bgcolor);
-            height: 50px;
-            min-height: 50px;
-            max-height: max-content;
+        flex-direction: column;
+        justify-content: flex-start;
+        overflow: hidden;
+        background-color: var(--app-bgcolor); // Ensure base bg is set
+
+        // Top Control Bar
+        .graph-controls {
+            display: flex;
             align-items: center;
-            &::part(content){
-                margin-top: unset;
+            gap: 12px;
+            padding: 8px 12px;
+            background-color: var(--panel-bgcolor);
+            border-bottom: 1px solid var(--tool-hover-bgcolor);
+            flex-shrink: 0;
+
+            // Custom Select Dropdown
+            select {
+                appearance: none; // Remove native OS styling
+                background-color: var(--button-bgcolor);
+                color: hsla(var(--app-text-color), 0.9);
+                border: 1px solid var(--tool-hover-bgcolor);
+                
+                // SVG Chevron Arrow
+                background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+                background-repeat: no-repeat;
+                background-position: right 8px center;
+                background-size: 14px;
+
+                padding: 5px 12px;
+                padding-right: 30px; // Space for arrow
+                border-radius: 6px;
+                font-family: inherit;
+                font-size: 0.85rem;
+                font-weight: 500;
+                cursor: pointer;
+                transition: all 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+                outline: none;
+
+                &:hover {
+                    background-color: var(--button-hover-bgcolor);
+                    border-color: hsla(var(--app-text-color), 0.3);
+                    color: hsla(var(--app-text-color), 1);
+                }
+                
+                &:focus {
+                    border-color: var(--app-accent-color);
+                    box-shadow: 0 0 0 3px hsla(var(--app-accent-color), 0.15);
+                }
+
+                // Dropdown Options
+                option {
+                    background-color: var(--panel-bgcolor);
+                    color: hsla(var(--app-text-color), 1);
+                    padding: 8px;
+                }
+            }
+
+            span {
+                font-size: 0.8rem;
+                color: hsla(var(--app-text-color), 0.6);
+                user-select: none;
+                font-weight: 600;
+                letter-spacing: 0.03em;
+                text-transform: uppercase;
             }
         }
 
+        // Input Fields Area
+        .graph-inputs {
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background-color: var(--app-bgcolor);
+            border-bottom: 1px solid var(--tool-hover-bgcolor);
+            flex-shrink: 0;
+
+            .input-row {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                width: 100%;
+
+                .input-label {
+                    font-family: 'Times New Roman', serif;
+                    font-style: italic;
+                    font-size: 1.15rem;
+                    color: hsla(var(--app-text-color), 0.75);
+                    min-width: 35px;
+                    text-align: right;
+                    user-select: none;
+                }
+
+                .math-field-wrapper {
+                    flex: 1;
+
+                    // Overrides for MathView specifically inside Graph inputs
+                    .math-field-element {
+                        height: 38px;
+                        min-height: 38px;
+                        border: 1px solid var(--tool-hover-bgcolor);
+                        border-radius: 6px;
+                        background-color: var(--math-block-bgcolor);
+                        padding: 0 8px;
+                        font-size: 18px;
+                        transition: border-color 0.2s, box-shadow 0.2s;
+
+                        &::part(content) {
+                            margin-top: 0;
+                            display: flex;
+                            align-items: center;
+                        }
+
+                        &:focus-within {
+                            border-color: var(--app-accent-color);
+                            box-shadow: 0 0 0 2px hsla(var(--app-accent-color), 0.1);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Mafs Plot Styling
         .MafsView {
-            font-family: 'CMU Serif';
+            flex-grow: 1;
+            font-family: 'CMU Serif', serif;
             direction: ltr;
+
+            // Map Mafs internal variables to App Theme
             --mafs-line-color: var(--page-border);
             --mafs-bg: var(--page-bgcolor);
             --mafs-fg: hsla(var(--app-text-color), 1);
             --mafs-blue: var(--mafs-plot-color);
-
+            --mafs-red: #e57373;
+            --mafs-green: #81c784;
+            --mafs-origin-color: hsla(var(--app-text-color), 0.5);
         }
     }
 
-    // Draw
+    // --- 5. Draw Applet Styling (Tldraw) ---
     .draw-applet {
         width: 100%;
         height: 100%;
 
-        .t-ljGyqI{
+        .t-ljGyqI {
             border: 1px solid transparent !important;
             border-radius: 6px !important;
             width: calc(100% - 27px);
             height: calc(100% - 6px);
 
-            .tl-positioned{
-                path:last-child{
+            .tl-positioned {
+                path:last-child {
                     fill: hsla(var(--app-text-color), 1);
-                    stroke: hsla(var(--app-text-color), 1);    
+                    stroke: hsla(var(--app-text-color), 1);
                 }
             }
 
-            #tl{
-                --tl-background: var(--math-block-bgcolor); 
+            #tl {
+                --tl-background: var(--math-block-bgcolor);
             }
 
-            #TD-Tools{
+            #TD-Tools {
                 --colors-panelContrast: var(--tool-hover-bgcolor);
                 --colors-panel: var(--panel-bgcolor);
                 --colors-hover: var(--tool-hover-bgcolor);
                 --colors-text: hsla(var(--app-text-color), 1);
             }
-            .c-itYKbw{
+
+            .c-itYKbw {
                 display: none;
             }
-            .c-dwQeTN{
+
+            .c-dwQeTN {
                 padding: 0;
             }
 
             button {
                 background-color: unset;
-                &:hover{
+                &:hover {
                     background-color: unset;
                 }
             }

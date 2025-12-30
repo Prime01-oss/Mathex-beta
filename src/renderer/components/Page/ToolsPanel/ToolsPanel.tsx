@@ -43,12 +43,12 @@ const ToolsPanel = () => {
           icon='chat-arrow-grow'
           onClick={() => handleOnClickTool(WidgetType.Graph)}
         />
-        {/* <Tool
-          title={t("Picture Block")}
+        <Tool
+          title={t("File Add")}
           buttonType='addPictureBlock'
           icon='picture'
           onClick={() => handleOnClickTool(WidgetType.Picture)}
-        /> */}
+        />
         <Tool
           title={t("Draw Block")}
           buttonType='addDrawBlock'

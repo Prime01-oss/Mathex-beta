@@ -28,11 +28,15 @@ const staticActions: Action[] = [
   { id: 'dark', name: 'Dark', parent: 'theme' },
   // New Action
   { 
+    id: 'tools', 
+    name: 'Tools', 
+  },
+  { 
     id: 'octave', 
     name: 'GNU Octave Terminal', 
     shortcut: ['o'], // You can press 'o' in the command bar to trigger it
     keywords: 'math matlab console terminal',
-    section: 'Tools' 
+    parent: 'tools' 
   },
 ];
 

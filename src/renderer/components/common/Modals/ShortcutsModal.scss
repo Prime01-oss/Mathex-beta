@@ -5,7 +5,8 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: hsla(0, 0%, 0%, 0.6); 
+    background-color: hsla(0, 0%, 0%, 0.6); // Dark backdrop
+    backdrop-filter: blur(4px); // Premium glass effect
     display: flex;
     justify-content: center;
     align-items: center;
@@ -17,13 +18,14 @@
     color: hsl(var(--app-text-color));
     border: 1px solid var(--page-border);
     border-radius: 12px;
-    box-shadow: 0 5px 25px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25); // Deeper shadow
     width: 90%;
     max-width: 800px;
-    height: 70vh;
+    height: 75vh; // Slightly taller
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    animation: modal-pop 0.2s cubic-bezier(0.16, 1, 0.3, 1); // Smooth entry
 
     .modal-header {
       display: flex;
@@ -38,6 +40,7 @@
         margin: 0;
         font-size: 1.2rem;
         white-space: nowrap;
+        font-weight: 600;
       }
 
       .shortcuts-search-bar {
@@ -48,11 +51,12 @@
         padding: 0 12px;
         flex-grow: 1;
         border: 1px solid var(--app-border-color);
-        transition: background-color 0.2s, border-color 0.2s;
+        transition: all 0.2s;
         
         &:focus-within {
           background-color: var(--page-bgcolor);
           border-color: var(--app-accent-color);
+          box-shadow: 0 0 0 2px hsla(var(--app-text-color), 0.05);
         }
 
         i {
@@ -81,6 +85,11 @@
         color: var(--tool-color);
         padding: 0;
         line-height: 1;
+        transition: color 0.2s;
+        
+        &:hover {
+            color: var(--app-accent-color);
+        }
       }
     }
 
@@ -107,16 +116,23 @@
         border-radius: 8px;
         border: 1px solid var(--app-border-color);
         flex-shrink: 0;
+        
+        // --- NEW: Handle overflow if tabs assume too much width ---
+        overflow-x: auto; 
+        scrollbar-width: none; // Hide scrollbar Firefox
+        &::-webkit-scrollbar { display: none; } // Hide scrollbar Chrome
 
         button {
           flex-grow: 1;
-          padding: 8px 12px;
+          white-space: nowrap; // Prevent text wrapping
+          padding: 8px 16px;
           border: none;
           border-radius: 6px;
           background-color: transparent;
           color: var(--tool-color);
           cursor: pointer;
           font-weight: 500;
+          font-size: 0.9rem;
           transition: background-color 0.2s, color 0.2s;
           
           &:hover {
@@ -125,8 +141,9 @@
           }
 
           &.active {
-            background-color: var(--pill-active-bgcolor);
-            color: hsl(var(--app-text-color));
+            background-color: var(--page-bgcolor); // Card-like active state
+            color: var(--app-accent-color);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
           }
         }
       }
@@ -135,7 +152,15 @@
         overflow-y: auto;
         flex-grow: 1;
         opacity: 1;
+        padding-right: 5px; // Space for scrollbar
         transition: opacity 200ms ease-in-out;
+
+        // Custom Scrollbar for list
+        &::-webkit-scrollbar { width: 6px; }
+        &::-webkit-scrollbar-thumb { 
+            background-color: var(--tool-hover-bgcolor); 
+            border-radius: 4px; 
+        }
 
         &.loading {
           opacity: 0.5;
@@ -146,15 +171,24 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 12px 5px;
+        padding: 12px 10px;
         border-bottom: 1px solid var(--app-border-color);
+        transition: background-color 0.1s;
+
+        &:hover {
+            background-color: hsla(var(--app-text-color), 0.02);
+        }
 
         &:last-child {
           border-bottom: none;
         }
       }
 
-      .shortcut-description { color: hsl(var(--app-text-color)); }
+      .shortcut-description { 
+          color: hsl(var(--app-text-color));
+          font-weight: 500;
+          font-size: 0.95rem;
+      }
 
       .shortcut-keys-math {
         display: flex;
@@ -164,12 +198,13 @@
       
       .kbc-button {
         padding: 4px 8px;
-        border-radius: 4px;
-        border: var(--button-border);
-        background-color: var(--pill-bgcolor);
-        font-family: monospace;
-        font-size: 12px;
+        border-radius: 6px;
+        border: 1px solid var(--app-border-color);
+        background-color: var(--math-block-bgcolor);
+        font-family: 'Consolas', monospace;
+        font-size: 13px;
         color: hsl(var(--app-text-color));
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
       }
       
       .math-symbol { min-width: 20px; text-align: center; }
@@ -185,4 +220,9 @@
       }
     }
   }
+}
+
+@keyframes modal-pop {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
 }
