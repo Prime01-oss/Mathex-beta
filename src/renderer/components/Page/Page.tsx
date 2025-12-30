@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import '../Application.scss';
 import './Page.scss';
 import ToolsPanel from './ToolsPanel/ToolsPanel';
@@ -19,47 +19,65 @@ const gridStyle = {
 const Page = () => {
   const { selectedFile, setSaveRequest } = useGeneralContext();
   const [currentFilePath, setCurrentFilePath] = useState('');
+  
+  // Ref for the scrollable Grid container
+  const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setCurrentFilePath(selectedFile);
   }, [selectedFile]);
 
-  // --- START: FINAL CORRECTED KEYBOARD SHORTCUT LOGIC ---
+  // Safety Measure: Explicitly reset scroll when file changes
+  useEffect(() => {
+    if (gridRef.current) {
+      // Immediate reset
+      gridRef.current.scrollTop = 0;
+      
+      // Secondary reset to handle any async layout shifts
+      setTimeout(() => {
+        if (gridRef.current) gridRef.current.scrollTop = 0;
+      }, 50);
+    }
+  }, [currentFilePath]);
+
+  // --- Keyboard Shortcuts ---
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Logic for Ctrl+S (Save)
+      // Ctrl+S (Save)
       if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         setSaveRequest({ cmd: 'save' });
       }
 
-      // Smart shortcut logic for Ctrl+O
+      // Ctrl+O (Open)
       if (event.key === 'o' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
-        
         if (selectedFile) {
-          // If a folder is open, send a 'new-file' request
           window.api.send('new-file-request');
         } else {
-          // If no folder is open, send an 'open-folder' request
-          // This is the correct way to trigger the open folder dialog
           window.api.send('open-folder'); 
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [selectedFile, setSaveRequest]); 
-  // --- END: FINAL CORRECTED KEYBOARD SHORTCUT LOGIC ---
 
   return (
     <div className='page' style={gridStyle}>
       {currentFilePath ? (
-        <div className='page-grid'>
+        // --- THE FIX ---
+        // 1. key={currentFilePath}: Forces React to destroy the old div and create a new one. 
+        //    This guarantees a fresh scrollbar starting at 0.
+        // 2. ref={gridRef}: Allows us to programmatically ensure it stays at 0.
+        <div 
+          className='page-grid' 
+          ref={gridRef} 
+          key={currentFilePath}
+        >
           <PageGrid />
           <ToolsPanel />
         </div>

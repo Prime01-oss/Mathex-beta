@@ -54,7 +54,9 @@ export function useAddBlock(setStateFunction: (...args: unknown[]) => unknown) {
     [WidgetType.Text, () => addBlockByType(WidgetType.Text, 2)],
     [WidgetType.Math, () => addBlockByType(WidgetType.Math, 2)],
     [WidgetType.Draw, () => addBlockByType(WidgetType.Draw, 6, 8, 4, 4)],
-    [WidgetType.Picture, () => console.error('not implemented')],
+    // NEW: Media Block Handler
+    [WidgetType.Media, () => addBlockByType(WidgetType.Media, 6, 8, 3, 3)],
+    [WidgetType.Picture, () => console.error('Picture deprecated, use Media')],
     [WidgetType.Group, () => console.error('not implemented')],
   ]);
 }

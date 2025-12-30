@@ -148,6 +148,9 @@ const ML_SHORTCUTS: Record<string, InlineShortcutDefinition> = {
     '∂': '\\differentialD',
   
     // Functions
+    // Floor and Ceiling
+    'floor': '\\lfloor {#?} \\rfloor',
+    'ceil': '\\lceil {#?} \\rceil',
     'arcsin': '\\arcsin',
     'arccos': '\\arccos',
     'arctan': '\\arctan',
@@ -417,7 +420,7 @@ const ML_SHORTCUTS: Record<string, InlineShortcutDefinition> = {
   
     '*': '\\cdot',
   
-    /*
+    
         //
         // ASCIIIMath
         //
@@ -432,11 +435,11 @@ const ML_SHORTCUTS: Record<string, InlineShortcutDefinition> = {
         '|><|':                 '\\bowtie',
         '-:':                   '\\div',
         'divide':               '\\div',
-        '@':                    '\\circ',
+        '.@':                    '\\circ',
         'o+':                   '\\oplus',
         'ox':                   '\\otimes',
         'o.':                   '\\odot',
-        '^^':                   '\\wedge',
+        '.^^':                   '\\wedge',
         '^^^':                  '\\bigwedge',
         'vv':                   '\\vee',
         'vvv':                  '\\bigvee',
@@ -460,7 +463,7 @@ const ML_SHORTCUTS: Record<string, InlineShortcutDefinition> = {
         'diamond':              '\\diamond',
         'square':               '\\square',
         'iff':                  '\\iff',
-        'sub':                  '\\subset',
+        '.sub':                  '\\subset',
         'sup':                  '\\supset',
         'sube':                 '\\subseteq',
         'supe':                 '\\supseteq',
@@ -476,9 +479,9 @@ const ML_SHORTCUTS: Record<string, InlineShortcutDefinition> = {
         // Logic
         'and':                  '\\land',
         'or':                   '\\lor',
-        'not':                  '\\neg',
+        '.not':                  '\\neg',
         '_|_':                   '\\bot',
-        'TT':                   '\\top',
+        '.TT':                   '\\top',
         '|--':                  '\\vdash',
         '|==':                  '\\models',
         
@@ -491,7 +494,7 @@ const ML_SHORTCUTS: Record<string, InlineShortcutDefinition> = {
         '>->':                   '\\rightarrowtail',
         '->>':                   '\\twoheadrightarrow',
         '>->>':                  '\\twoheadrightarrowtail'
-    */
+    
 };
 
 export default ML_SHORTCUTS

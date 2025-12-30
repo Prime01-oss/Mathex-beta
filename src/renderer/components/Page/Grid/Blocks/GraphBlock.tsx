@@ -27,7 +27,7 @@ function GraphBlockContent({ content, blockStateFunction }: ValueProps) {
   const [graphType, setGraphType] = useState<GraphType>(
     (Array.isArray(content) && content[0] ? (content[0] as GraphType) : 'cartesian')
   );
-  
+
   const [equations, setEquations] = useState<string[]>(
     (Array.isArray(content) && content.length > 1 ? (content.slice(1) as string[]) : [''])
   );
@@ -40,7 +40,7 @@ function GraphBlockContent({ content, blockStateFunction }: ValueProps) {
   useEffect(() => {
     const observer = new ResizeObserver((entries) => {
       if (!entries || entries.length === 0) return;
-      
+
       const { width, height } = entries[0].contentRect;
       // Only update if dimensions actually changed to avoid loop
       setDimensions(prev => {
@@ -69,11 +69,11 @@ function GraphBlockContent({ content, blockStateFunction }: ValueProps) {
 
   return (
     <div className='graph-block-wrapper'>
-      
+
       {/* Control Bar */}
       <div className="graph-controls">
-        <select 
-          value={graphType} 
+        <select
+          value={graphType}
           onChange={(e) => {
             setGraphType(e.target.value as GraphType);
             setEquations(['', '']); // Reset equations when switching types
@@ -83,7 +83,7 @@ function GraphBlockContent({ content, blockStateFunction }: ValueProps) {
           <option value="parametric">Parametric</option>
           <option value="polar">Polar</option>
         </select>
-        
+
         <span>
           {graphType === 'cartesian' && 'y = f(x)'}
           {graphType === 'parametric' && 'x(t), y(t)'}
@@ -94,52 +94,54 @@ function GraphBlockContent({ content, blockStateFunction }: ValueProps) {
       {/* Input Fields */}
       <div className="graph-inputs">
         {graphType === 'cartesian' && (
-           <MathInput 
-             label="y =" 
-             value={equations[0]} 
-             onChange={(val) => handleEquationChange(0, val)} 
-           />
+          <MathInput
+            label="y ="
+            value={equations[0]}
+            onChange={(val) => handleEquationChange(0, val)}
+          />
         )}
 
         {graphType === 'polar' && (
-           <MathInput 
-             label="r =" 
-             value={equations[0]} 
-             onChange={(val) => handleEquationChange(0, val)} 
-           />
+          <MathInput
+            label="r ="
+            value={equations[0]}
+            onChange={(val) => handleEquationChange(0, val)}
+          />
         )}
 
         {graphType === 'parametric' && (
           <>
-            <MathInput 
-              label="x(t) =" 
-              value={equations[0]} 
-              onChange={(val) => handleEquationChange(0, val)} 
+            <MathInput
+              label="x(t) ="
+              value={equations[0]}
+              onChange={(val) => handleEquationChange(0, val)}
             />
-            <MathInput 
-              label="y(t) =" 
-              value={equations[1]} 
-              onChange={(val) => handleEquationChange(1, val)} 
+            <MathInput
+              label="y(t) ="
+              value={equations[1]}
+              onChange={(val) => handleEquationChange(1, val)}
             />
           </>
         )}
       </div>
 
       {/* Plot Area Wrapper */}
-      {/* This div fills the remaining space, and we measure IT to size the graph */}
-      <div 
-        ref={containerRef} 
-        className="mafs-container-wrapper" 
+      <div
+        ref={containerRef}
+        className="mafs-container-wrapper"
         style={{ flex: 1, minHeight: 0, width: '100%', position: 'relative' }}
       >
         <Mafs
           preserveAspectRatio='contain'
           zoom={{ min: 0.1, max: 20 }}
-          width={dimensions.width}   // Explicit width from observer
-          height={dimensions.height} // Explicit height from observer
+          width={dimensions.width}
+          height={dimensions.height}
         >
-          <Coordinates.Cartesian />
-          
+          {/* UPDATED: subdivisions={10} creates 0.1 step grid lines */}
+          <Coordinates.Cartesian
+            subdivisions={10}
+          />
+
           {/* Cartesian Plot */}
           {graphType === 'cartesian' && (
             <Plot.OfX
@@ -152,7 +154,7 @@ function GraphBlockContent({ content, blockStateFunction }: ValueProps) {
           {graphType === 'parametric' && (
             <Plot.Parametric
               xy={(t: number) => [
-                evaluateLatex(equations[0], { t }) ?? 0, 
+                evaluateLatex(equations[0], { t }) ?? 0,
                 evaluateLatex(equations[1], { t }) ?? 0
               ]}
               t={[0, 2 * Math.PI]}
@@ -160,7 +162,7 @@ function GraphBlockContent({ content, blockStateFunction }: ValueProps) {
             />
           )}
 
-          {/* Polar Plot (Simulated via Parametric) */}
+          {/* Polar Plot */}
           {graphType === 'polar' && (
             <Plot.Parametric
               xy={(theta: number) => {
@@ -177,6 +179,8 @@ function GraphBlockContent({ content, blockStateFunction }: ValueProps) {
   );
 }
 
+// ... (rest of the file remains the same)
+
 // Helper component for individual math inputs
 function MathInput({ label, value, onChange }: { label: string, value: string, onChange: (v: string) => void }) {
   const ref = useRef<MathViewRef>(null);
@@ -188,13 +192,13 @@ function MathInput({ label, value, onChange }: { label: string, value: string, o
     const handleInput = () => {
       onChange(mathField.getValue('latex'));
     };
-    
+
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (mathField as any).addEventListener?.('input', handleInput); 
+    (mathField as any).addEventListener?.('input', handleInput);
 
     return () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (mathField as any).removeEventListener?.('input', handleInput);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (mathField as any).removeEventListener?.('input', handleInput);
     };
   }, [onChange]);
 
@@ -209,7 +213,7 @@ function MathInput({ label, value, onChange }: { label: string, value: string, o
           keybindings={ML_KEYBINDINGS}
           className='math-field-element'
           onContentDidChange={() => {
-             if(ref.current) onChange(ref.current.getValue('latex'));
+            if (ref.current) onChange(ref.current.getValue('latex'));
           }}
           plonkSound={null}
           keypressSound={null}

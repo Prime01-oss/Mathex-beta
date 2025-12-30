@@ -45,7 +45,13 @@
         font-size: larger;
         line-height: 1.5;
 
-        p, h1, h2, h3, h4, h5, h6 {
+        p,
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
             &:first-child {
                 margin-top: 0 !important;
             }
@@ -111,7 +117,7 @@
                 background-color: var(--button-bgcolor);
                 color: hsla(var(--app-text-color), 0.9);
                 border: 1px solid var(--tool-hover-bgcolor);
-                
+
                 // SVG Chevron Arrow
                 background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
                 background-repeat: no-repeat;
@@ -133,7 +139,7 @@
                     border-color: hsla(var(--app-text-color), 0.3);
                     color: hsla(var(--app-text-color), 1);
                 }
-                
+
                 &:focus {
                     border-color: var(--app-accent-color);
                     box-shadow: 0 0 0 3px hsla(var(--app-accent-color), 0.15);
@@ -166,6 +172,7 @@
             background-color: var(--app-bgcolor);
             border-bottom: 1px solid var(--tool-hover-bgcolor);
             flex-shrink: 0;
+            margin-right: 15px;
 
             .input-row {
                 display: flex;
@@ -268,10 +275,229 @@
 
             button {
                 background-color: unset;
+
                 &:hover {
                     background-color: unset;
                 }
             }
         }
+    }
+}
+
+// --- 6. Media Block Styling ---
+// --- 6. Media Block Styling ---
+.media-block-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--app-bgcolor);
+    color: hsla(var(--app-text-color), 0.7);
+
+    .media-input-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        width: 80%;
+        max-width: 400px;
+
+        .icon-placeholder {
+            font-size: 32px;
+            opacity: 0.5;
+        }
+
+        h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .url-form {
+            display: flex;
+            width: 100%;
+            gap: 8px;
+
+            .media-url-input {
+                flex: 1;
+                padding: 8px 12px;
+                border-radius: 6px;
+                border: 1px solid var(--tool-hover-bgcolor);
+                background-color: var(--panel-bgcolor);
+                color: hsla(var(--app-text-color), 1);
+                outline: none;
+
+                &:focus {
+                    border-color: var(--app-accent-color);
+                }
+            }
+        }
+
+        .media-btn {
+                padding: 8px 16px;
+                border-radius: 6px;
+                cursor: pointer;
+                font-weight: 500;
+                border: none;
+                transition: 0.2s;
+                
+                // --- FIXED ALIGNMENT ---
+                display: flex;
+                align-items: center;      // Strictly vertically center
+                justify-content: center;
+                gap: 8px;
+                line-height: 1;           // Kill extra line height
+                
+                i {
+                    display: flex;        // Removes inline baseline quirks
+                    align-items: center;
+                    font-size: 10px;
+                }
+                
+                span {
+                    // Sometimes fonts need a 1px push to look optically centered
+                    position: relative;
+                   
+                }
+                // -----------------------
+
+                &.primary {
+                    background-color: var(--app-accent-color);
+                    color: white;
+                }
+
+                &.secondary {
+                    background-color: var(--button-bgcolor);
+                    color: hsla(var(--app-text-color), 1);
+                    border: 1px solid var(--tool-hover-bgcolor);
+                    width: 100%;
+                    
+                    &:hover {
+                        background-color: var(--button-hover-bgcolor);
+                    }
+                }
+            }
+
+        .divider-text {
+            font-size: 0.8rem;
+            opacity: 0.5;
+            font-weight: 600;
+        }
+    }
+}
+
+
+.media-block-content {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background-color: black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+
+    // Reveal controls on hover
+    &:hover .media-controls {
+        opacity: 1;
+    }
+
+    .media-controls {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 80px; // Gradient area
+        z-index: 20;
+
+        // Premium Gradient: Dark to Transparent
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0) 100%);
+
+        display: flex;
+        justify-content: center; // Kept in Top-Middle
+        align-items: flex-start;
+        padding-top: 20px;
+
+        opacity: 0;
+        transition: opacity 0.4s ease;
+        pointer-events: none; // Allow clicks to pass through gradient
+
+        .edit-media-btn {
+            pointer-events: auto;
+
+            // NO BACKGROUND / NO BORDER
+            background: transparent;
+            border: none;
+            box-shadow: none;
+            padding: 6px 10px;
+
+            // --- PREMIUM CAPTION DESIGN ---
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            color: rgba(255, 255, 255, 0.75); // Start slightly muted
+
+            // Typography Stack
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            font-size: 11px; // Small and elegant
+            font-weight: 700; // Bold
+            text-transform: uppercase;
+            letter-spacing: 2.5px; // Ultra-wide "Cinematic" spacing
+            line-height: 1;
+
+            // Text Shadow for readability without background
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+
+            i {
+                font-size: 12px;
+                margin-bottom: 1px; // Visual alignment with uppercase text
+                opacity: 0.7;
+                transition: opacity 0.3s ease;
+                text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+            }
+
+            // Hover Effects
+            &:hover {
+                color: #ffffff; // Bright white on hover
+                transform: translateY(1px); // Subtle press feel
+
+                // Intense glow on hover
+                text-shadow: 0 0 12px rgba(255, 255, 255, 0.6),
+                    0 2px 4px rgba(0, 0, 0, 0.8);
+
+                i {
+                    opacity: 1;
+                }
+            }
+
+            &:active {
+                transform: translateY(2px);
+                color: rgba(255, 255, 255, 0.8);
+            }
+        }
+    }
+
+    .media-iframe,
+    .media-video {
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        border: none;
+    }
+
+    .media-img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+    .pdf-view {
+        background-color: white;
     }
 }

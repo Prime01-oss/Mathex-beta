@@ -62,7 +62,7 @@ const onboardingContent = {
     },
     {
       "w": 3,
-      "h": 4,
+      "h": 5,
       "x": 0,
       "y": 10,
       "i": "4c8f483d-88a3-43a3-ac4c-5ed69a8af189",
@@ -118,7 +118,7 @@ const onboardingContent = {
       "w": 3,
       "h": 4,
       "x": 0,
-      "y": 18,
+      "y": 20,
       "i": "348f049f-3c34-4da9-bab4-6c49e637a494",
       "minW": 1,
       "maxW": 8,
@@ -155,9 +155,9 @@ const onboardingContent = {
     },
     {
       "w": 3,
-      "h": 4,
+      "h": 5,
       "x": 0,
-      "y": 14,
+      "y": 15,
       "i": "9249ad8b-238a-4020-a521-c41f961c5973",
       "minW": 1,
       "maxW": 8,
@@ -215,7 +215,7 @@ const onboardingContent = {
       "w": 5,
       "h": 2,
       "x": 3,
-      "y": 15,
+      "y": 17,
       "i": "65e61c01-c999-411c-8c4d-4c7242d1a274",
       "minW": 1,
       "maxW": 8,
@@ -228,9 +228,9 @@ const onboardingContent = {
     },
     {
       "w": 5,
-      "h": 3,
+      "h": 4,
       "x": 3,
-      "y": 12,
+      "y": 13,
       "i": "630fc019-caff-43f3-a629-d91ffa34e635",
       "minW": 1,
       "maxW": 8,
@@ -246,7 +246,7 @@ const onboardingContent = {
             "type": "paragraph",
             "children": [
               {
-                "text": "In addition to writing in LaTeX, we've added dozens of keyboard shortcuts to help you write faster in math blocks. For example, try writing \"intfx\" in a math block. Keyboard shortcuts help menu coming soon!"
+                "text": "In addition to writing in LaTeX, we've added dozens of keyboard shortcuts. Try writing \"intfx\", \"floor\", or \"ceil\" in a math block to see them in action!"
               }
             ]
           }
@@ -257,7 +257,7 @@ const onboardingContent = {
       "w": 5,
       "h": 3,
       "x": 3,
-      "y": 17,
+      "y": 19,
       "i": "997ff1a3-8919-4302-8d6a-47e3d8fb397d",
       "minW": 1,
       "maxW": 8,
@@ -282,9 +282,9 @@ const onboardingContent = {
     },
     {
       "w": 5,
-      "h": 5,
+      "h": 6,
       "x": 3,
-      "y": 20,
+      "y": 22,
       "i": "4455135f-af3c-454d-bb87-d393b7814b1f",
       "minW": 2,
       "maxW": 8,
@@ -293,13 +293,13 @@ const onboardingContent = {
       "moved": false,
       "static": false,
       "type": 1,
-      "metaData": { "content": ["\\sin(x)\\cdot\\tan(x)"] }
+      "metaData": { "content": ["cartesian", "\\sin(x)", ""] }
     },
     {
       "w": 5,
       "h": 4,
       "x": 3,
-      "y": 27,
+      "y": 30,
       "i": "2c7648cb-bad0-4d17-8101-b6044f2f12d3",
       "minW": 4,
       "maxW": 8,
@@ -308,19 +308,13 @@ const onboardingContent = {
       "moved": false,
       "static": false,
       "type": 6,
-      "metaData": {
-        "content": {
-          "shapes": [],
-          "bindings": [],
-          "assets": []
-        }
-      }
+      "metaData": {}
     },
     {
       "w": 5,
       "h": 2,
       "x": 3,
-      "y": 25,
+      "y": 28,
       "i": "bbd2df59-7777-4353-8ee2-c6e1942fba57",
       "minW": 1,
       "maxW": 8,
@@ -346,7 +340,7 @@ const onboardingContent = {
     },
     {
       "w": 5,
-      "h": 2,
+      "h": 3,
       "x": 3,
       "y": 10,
       "i": "64fbccd1-e25d-4a01-8749-aa4a23507519",
@@ -373,9 +367,9 @@ const onboardingContent = {
     },
     {
       "w": 3,
-      "h": 4,
+      "h": 5,
       "x": 0,
-      "y": 22,
+      "y": 24,
       "i": "c0e9fa2b-6b44-44bc-a7b4-564ae5dbc6b5",
       "minW": 1,
       "maxW": 8,
@@ -414,9 +408,9 @@ const onboardingContent = {
     },
     {
       "w": 3,
-      "h": 4,
+      "h": 5,
       "x": 0,
-      "y": 26,
+      "y": 29,
       "i": "6900c23a-d4b5-42c5-92a5-01c5b6f32e89",
       "minW": 1,
       "maxW": 8,
@@ -467,9 +461,103 @@ const onboardingContent = {
       "metaData": {
         "content": [{ "type": "heading-one", "children": [{ "text": "FAQ" }] }]
       }
+    },
+    {
+      "w": 5,
+      "h": 6,
+      "x": 3,
+      "y": 36,
+      "i": "dbd3857b-29d3-4c10-b863-df7d720523d7",
+      "minW": 3,
+      "maxW": 8,
+      "minH": 3,
+      "maxH": 100,
+      "moved": false,
+      "static": false,
+      "type": 7,
+      "metaData": {}
+    },
+    {
+      "w": 5,
+      "h": 2,
+      "x": 3,
+      "y": 34,
+      "i": "4e292890-b912-454a-878a-44dc4b7e8634",
+      "minW": 1,
+      "maxW": 8,
+      "minH": 1,
+      "maxH": 100,
+      "moved": false,
+      "static": false,
+      "type": 3,
+      "metaData": {
+        "content": [
+          {
+            "type": "heading-three",
+            "children": [{ "text": "Media Block" }]
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              {
+                "text": "Embed YouTube videos, images, or PDFs directly into your notebook."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "w": 3,
+      "h": 8,
+      "x": 0,
+      "y": 34,
+      "i": "a56f93ee-c6dc-45d3-b618-1b4599b49023",
+      "minW": 1,
+      "maxW": 8,
+      "minH": 1,
+      "maxH": 100,
+      "moved": false,
+      "static": false,
+      "type": 3,
+      "metaData": {
+        "content": [
+          {
+            "type": "heading-two",
+            "children": [{ "text": "Mathematical Tools" }]
+          },
+          {
+            "type": "paragraph",
+            "children": [
+              { "text": "Use various Mathematical tools like:" }
+            ]
+          },
+          {
+            "type": "bulleted-list",
+            "children": [
+              {
+                "type": "list-item",
+                "children": [{ "text": "Chalkboard" }]
+              },
+              {
+                "type": "list-item",
+                "children": [{ "text": "Scientific Calculator" }]
+              },
+              {
+                "type": "list-item",
+                "children": [{ "text": "Math-Buddy (AI)" }]
+              },
+              {
+                "type": "list-item",
+                "children": [{ "text": "GNU Octave" }]
+              }
+            ]
+          }
+        ]
+      }
     }
   ],
-  "tags": [],
+  "tags": ["Welcome", "Demo", "Template"],
   "mathMemory": {}
 }
 

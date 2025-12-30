@@ -8,8 +8,9 @@ export enum WidgetType {
   Group,
   Text,
   Math,
-  Picture,
+  Picture, // Kept for legacy compatibility
   Draw,
+  Media,   // NEW: For Embeds (YouTube, Files, Images)
 }
 
 export type canvasProps = {

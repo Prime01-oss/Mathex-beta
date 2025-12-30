@@ -1,6 +1,7 @@
 import React, { LegacyRef, useEffect, useState } from 'react';
 import TextBlockContent from './Blocks/TextBlock';
 import MathBlockContent from './Blocks/MathBlock';
+import MediaBlockContent from './Blocks/MediaBlock';
 import GraphBlockContent from './Blocks/GraphBlock';
 import { BlockElement, ValueProps, WidgetType } from '@renderer/common/types';
 import DrawBlockContent from './Blocks/DrawBlock';
@@ -36,7 +37,6 @@ function Switcher(
   blockValue: ValueProps,
   blockStateFunction: (...args: unknown[]) => unknown,
 ) {
-
   try {
     switch (widgetType) {
       case WidgetType.Text:
@@ -65,6 +65,14 @@ function Switcher(
       case WidgetType.Draw:
         return (
           <DrawBlockContent
+            content={blockValue.content}
+            blockStateFunction={blockStateFunction}
+          />
+        );
+      // NEW CASE
+      case WidgetType.Media:
+        return (
+          <MediaBlockContent
             content={blockValue.content}
             blockStateFunction={blockStateFunction}
           />

@@ -9,7 +9,7 @@ module.exports = {
     asar: true,
     // Set executable name
     executableName: 'mathex',
-  
+
     // Set application icon
     icon: path.resolve('assets/images/appIcon.ico'),
   },
@@ -49,8 +49,8 @@ module.exports = {
       config: {
         // Fix content-security-policy error when image or video src isn't same origin
         // Remove 'unsafe-eval' to get rid of console warning in development mode.
-        devContentSecurityPolicy: `default-src 'self' 'unsafe-inline' data:; script-src 'self' 'unsafe-inline' data:`,
-        // Ports
+        devContentSecurityPolicy: "default-src 'self' 'unsafe-inline' data: blob:; script-src 'self' 'unsafe-eval' 'unsafe-inline' data:; frame-src 'self' https://www.youtube.com https://youtu.be https://www.google.com; img-src 'self' data: blob:; media-src 'self' data: blob:;",
+        // -----------------------        // Ports
         port: 3000, // Webpack Dev Server port
         loggerPort: 9000, // Logger port
         // Main process webpack configuration

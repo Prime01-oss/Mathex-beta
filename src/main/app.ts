@@ -8,7 +8,8 @@ interface SystemError extends Error {
   code?: string;
   syscall?: string;
 }
-
+app.commandLine.appendSwitch('use-angle', 'd3d11');
+app.commandLine.appendSwitch('enable-webgl');
 if (require('electron-squirrel-startup')) {
   app.quit();
 }
