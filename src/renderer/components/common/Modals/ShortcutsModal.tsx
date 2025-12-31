@@ -42,11 +42,11 @@ const shortcutCategories: Categories = {
     items: ML_KEYBINDINGS.filter(b => !b.ifMode),
   },
   mathEditor: {
-    title: 'Math Editor',
+    title: 'Math',
     items: ML_SHORTCUTS,
   },
   textEditor: {
-    title: 'Text Editor', // New Category
+    title: 'Text', // New Category
     items: TEXT_BLOCK_SHORTCUTS,
   },
   navigation: {

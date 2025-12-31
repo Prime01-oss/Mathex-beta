@@ -349,6 +349,7 @@ ipcMain.on('startSearch', () => {
   appWindow.webContents.send('gotAllBlocks', allGroups);
 });
 
+
 /**
  * Register Inter Process Communication
  */

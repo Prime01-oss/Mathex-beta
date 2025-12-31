@@ -86,6 +86,7 @@ const api = {
   startOctave: () => ipcRenderer.send('start-octave-session'),
   sendOctaveInput: (cmd: string) => ipcRenderer.send('octave-input', cmd),
   stopOctave: () => ipcRenderer.send('stop-octave-session'),
+  readImage: (path: string) => ipcRenderer.invoke('read-image-file', path),
 };
 
 // Securely expose the single 'api' object to the renderer process

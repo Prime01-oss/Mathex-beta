@@ -1,98 +1,301 @@
+// src/renderer/components/OctaveTerminal/OctaveTerminal.scss
+
 .octave-fullscreen-overlay {
   position: fixed;
   top: 0; left: 0;
   width: 100vw; height: 100vh;
-  background-color: hsla(0, 0%, 5%, 0.85);
-  backdrop-filter: blur(5px);
-  z-index: 9999; // Ensure this is above all other app layers
+  background-color: var(--page-bgcolor);
+  z-index: 9999;
   display: flex;
-  justify-content: center;
-  align-items: center;
+  font-family: 'Segoe UI', sans-serif;
+  color: #ccc;
 
-  .terminal-window {
-    width: 90vw;
-    height: 85vh;
-    background-color: var(--page-bgcolor); 
-    border: 1px solid var(--app-border-color);
-    border-radius: 12px;
+  .matlab-container {
+    width: 100%;
+    height: 100%;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     overflow: hidden;
-    position: relative; // Create a stacking context
-
-    .terminal-toolbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 20px;
-      background-color: var(--panel-bgcolor);
-      border-bottom: 1px solid var(--app-border-color);
-      position: relative;
-      z-index: 100; // Force toolbar to be physically above the body
-      pointer-events: auto; // Ensure clicks are captured here
-      
-      .title {
-        font-weight: bold;
-        color: hsl(var(--theme-hue), 60%, 80%);
+    
+    // --- RESIZER ---
+    .resizer {
+        width: 6px;
+        background-color: var(--panel-bgcolor);
+        border-left: 1px solid var(--app-border-color);
+        border-right: 1px solid var(--app-border-color);
+        cursor: col-resize;
         display: flex;
+        justify-content: center;
         align-items: center;
-        gap: 10px;
-      }
+        z-index: 100;
+        transition: background-color 0.2s;
 
-      .controls {
+        &:hover, &:active {
+            background-color: var(--app-accent-color);
+            .handle-bar { background-color: white; }
+        }
+
+        .handle-bar {
+            width: 2px;
+            height: 20px;
+            background-color: #555;
+            border-radius: 1px;
+        }
+    }
+
+    // --- SHARED PANE STYLES ---
+    .pane {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-width: 200px; // Prevent shrinking too much
+
+      .pane-toolbar {
+        height: 40px;
+        background-color: var(--panel-bgcolor);
+        border-bottom: 1px solid var(--app-border-color);
         display: flex;
-        gap: 8px;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 10px;
+        user-select: none;
+        
+        .group-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-        button {
-          background-color: var(--button-bgcolor);
-          border: 1px solid var(--app-border-color);
-          color: #ccc;
-          padding: 6px 14px;
-          border-radius: 6px;
-          cursor: pointer !important; // Force the pointer cursor
-          font-size: 0.85rem;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          pointer-events: auto;
+        .script-name-input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-weight: 500;
+            width: 150px;
+            outline: none;
+            border-bottom: 1px solid transparent;
+            &:focus { border-bottom-color: var(--app-accent-color); }
+        }
 
-          &:hover {
-            background-color: var(--button-hover-bgcolor);
-            color: white;
-          }
+        .pane-title {
+          font-weight: 600;
+          color: hsl(var(--theme-hue), 60%, 80%);
+          font-size: 0.9rem;
+          display: flex; align-items: center; gap: 8px;
+        }
 
-          &.danger:hover {
-            background-color: var(--button-danger);
-            color: black;
-          }
+        .pane-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+
+            .divider-v {
+                width: 1px; height: 16px;
+                background-color: #444;
+                margin: 0 4px;
+            }
+            
+            button, .icon-btn {
+                background: transparent;
+                border: 1px solid transparent;
+                color: #ccc;
+                height: 28px;
+                padding: 0 8px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 0.9rem;
+                display: flex; align-items: center; justify-content: center;
+                -webkit-app-region: no-drag;
+
+                &:hover { background: rgba(255,255,255,0.1); color: #fff; }
+                &.danger:hover { background: #d32f2f; color: white; }
+            }
+
+            .run-btn {
+                background-color: #2e7d32;
+                color: white;
+                font-size: 0.8rem;
+                font-weight: 600;
+                gap: 6px;
+                padding: 0 12px;
+                border: 1px solid #1b5e20;
+                
+                &:hover { background-color: #388e3c; }
+            }
         }
       }
     }
 
-    .console-body {
-      flex: 1;
-      padding: 20px;
-      overflow-y: auto;
-      background-color: #0f0f0f; 
-      color: #e0e0e0;
-      position: relative;
-      z-index: 10; // Lower than the toolbar
+    // --- EDITOR PANE SPECIFIC ---
+    .editor-pane {
+        background-color: #1e1e1e;
+        
+        .editor-area-wrapper {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
 
-      .line { white-space: pre-wrap; font-family: monospace; }
-      
-      .input-area {
-        display: flex;
-        margin-top: 10px;
-        .prompt { color: var(--app-accent-color); margin-right: 10px; font-weight: bold; }
-        input {
-          flex: 1;
-          background: transparent;
-          border: none;
-          color: #fff;
-          outline: none;
-          font-family: monospace;
+            .gutter {
+                width: 45px;
+                background-color: #1e1e1e;
+                border-right: 1px solid #333;
+                overflow: hidden; // Hide scrollbar
+                flex-shrink: 0;
+
+                .line-numbers {
+                    padding-top: 15px; // Match textarea padding
+                    text-align: right;
+                    padding-right: 8px;
+                    color: #555;
+                    font-family: 'Consolas', 'Monaco', monospace;
+                    font-size: 14px;
+                    line-height: 1.5;
+                }
+            }
+            
+            .code-editor {
+                flex: 1;
+                background-color: transparent;
+                border: none;
+                resize: none;
+                padding: 15px;
+                color: #d4d4d4;
+                font-family: 'Consolas', 'Monaco', monospace;
+                font-size: 14px;
+                line-height: 1.5;
+                outline: none;
+                white-space: pre; // Handle tabs/spaces correctly
+                overflow: auto; // Editor controls the scroll
+
+                &::placeholder { color: #444; font-style: italic; }
+            }
         }
-      }
+
+        .pane-statusbar {
+            height: 24px;
+            background-color: var(--app-accent-color);
+            color: black;
+            font-size: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 15px;
+            padding: 0 10px;
+            font-weight: 600;
+        }
+    }
+
+    // --- CONSOLE PANE SPECIFIC ---
+    .console-pane {
+        background-color: #0f0f0f;
+
+        .console-body {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            color: #e0e0e0;
+            
+            .line { white-space: pre-wrap; margin-bottom: 2px; }
+
+            .input-area {
+                display: flex;
+                margin-top: 5px;
+                .prompt { color: var(--app-accent-color); margin-right: 8px; font-weight: bold; }
+                input {
+                    flex: 1;
+                    background: transparent;
+                    border: none;
+                    color: #fff;
+                    outline: none;
+                    font-family: inherit;
+                    font-size: inherit;
+                }
+            }
+        }
     }
   }
 }
+// src/renderer/components/OctaveTerminal/OctaveTerminal.scss
+
+// ... (Existing styles) ...
+
+// --- NEW STYLES FOR PLOT BUTTON ---
+.run-btn.plot-btn {
+    background-color: #0277bd !important; // Blue for Plot
+    border-color: #01579b !important;
+    &:hover { background-color: #0288d1 !important; }
+}
+
+// --- NEW STYLES FOR PLOT MODAL ---
+.plot-modal-overlay {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(3px);
+    z-index: 200; // Above split panes
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: fadeIn 0.2s ease-out;
+
+    .plot-window {
+        background-color: #252526;
+        border: 1px solid #454545;
+        border-radius: 8px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        display: flex;
+        flex-direction: column;
+        max-width: 90%;
+        max-height: 90%;
+        animation: scaleIn 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+
+        .plot-header {
+            padding: 10px 15px;
+            background-color: #333;
+            border-bottom: 1px solid #454545;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 8px 8px 0 0;
+            font-weight: bold;
+            color: #ddd;
+
+            button {
+                background: none; border: none; color: #aaa; cursor: pointer;
+                font-size: 1.2rem; display: flex;
+                &:hover { color: #fff; }
+            }
+        }
+
+        .plot-content {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #fff; // Plots usually look best on white
+
+            img {
+                max-width: 100%;
+                max-height: 70vh;
+                object-fit: contain;
+                border: 1px solid #ddd;
+            }
+        }
+
+        .plot-footer {
+            padding: 8px 15px;
+            background-color: #333;
+            color: #888;
+            font-size: 0.8rem;
+            text-align: center;
+            border-radius: 0 0 8px 8px;
+        }
+    }
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn { from { transform: scale(0.9); } to { transform: scale(1); } }
