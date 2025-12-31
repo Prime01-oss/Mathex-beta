@@ -47,7 +47,7 @@ export function CommandBar() {
   const animatorStyle = {
     maxWidth: '600px',
     width: '100%',
-    zIndex: '10000',
+    zIndex: '20002', // Increased to be safe inside the positioner
     padding: '10px 8px',
     outline: '1px solid var(--page-border)',
     backdropFilter: 'blur(7px)',
@@ -60,7 +60,10 @@ export function CommandBar() {
 
   return (
     <KBarPortal>
-      <KBarPositioner style={{ width: 'unset' }}>
+      {/* Updated zIndex to 20001 to ensure it appears above the OctaveTerminal 
+          (which has a z-index of 10000) and context menus.
+      */}
+      <KBarPositioner style={{ width: 'unset', zIndex: 20001 }}>
         <KBarAnimator style={animatorStyle}>
           <KBarSearch
             className='command-bar-search'
