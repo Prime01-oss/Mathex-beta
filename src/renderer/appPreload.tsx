@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-import titlebarContext from '../../misc/window/titlebarContext'; // Adjusted path
+import titlebarContext from '../../misc/window/titlebarContext'; 
 
 console.log('[ERWT] : Preload execution started');
 
@@ -7,12 +7,16 @@ console.log('[ERWT] : Preload execution started');
 const api = {
   // --- Functions from misc/window/windowPreload.ts ---
   titlebar: titlebarContext,
+
+  // Generic Send (Restricted to specific channels if needed)
   send: (channel: string, data: string) => {
     const validChannels = ['toMain'];
     if (validChannels.includes(channel)) {
       ipcRenderer.send(channel, data);
     }
   },
+
+  // Generic Receive (Listener)
   receive: (channel: string, func: (...args: unknown[]) => void) => {
     const validChannels = [
       'gotLoadedDataX', 'Home', 'Picture', 'gotAllPictures', 'gotPicture',
@@ -20,23 +24,23 @@ const api = {
       'gotArchive', 'gotUserColor', 'gotOS', 'openFiles', 'newFile', 'Save',
       'fromMain', 'Text', 'Graph', 'Math', 'Group', 'gotNotebooks',
       'toggleNotebooks', 'Search',
-      'octave-output' // <--- ADDED THIS CHANNEL
+      'octave-output' // Required for Octave Terminal
     ];
     if (validChannels.includes(channel)) {
-      // 1. Create a named reference to the wrapper function
-      // Using IpcRendererEvent instead of 'any' fixes the lint error
+      // Type-safe wrapper for the listener
       const subscription = (_event: IpcRendererEvent, ...args: unknown[]) => func(...args);
 
-      // 2. Add the listener
+      // Add listener
       ipcRenderer.on(channel, subscription);
 
-      // 3. RETURN A CLEANUP FUNCTION
-      // This allows the React component to call removeListener() later
+      // Return cleanup function (Critical for React useEffect)
       return () => {
         ipcRenderer.removeListener(channel, subscription);
       };
     }
   },
+
+  // --- Core Application Functions ---
   getNotebooks: () => ipcRenderer.send('getNotebooks'),
   delete: (path: string, isFolder: boolean) => ipcRenderer.send('delete', path, isFolder),
   newFile: (filePath: string) => ipcRenderer.send('newFile', filePath),
@@ -48,29 +52,33 @@ const api = {
   saveX: (data: string, filePath: string) => ipcRenderer.send('saveX', data, filePath),
   loadX: (filePath: string) => ipcRenderer.send('loadX', filePath),
   getOS: () => ipcRenderer.send('getOS'),
+  
+  // --- Window Controls ---
   maximize: () => ipcRenderer.send('maximize'),
   unmaximize: () => ipcRenderer.send('unmaximize'),
   minimize: () => ipcRenderer.send('minimize'),
   close: () => ipcRenderer.send('close'),
+  
+  // --- Theme & Settings ---
   setUserColor: (color: string) => ipcRenderer.send('setUserColor', color),
   setPageStyle: (style: string) => ipcRenderer.send('setPageStyle', style),
   toggle: () => ipcRenderer.send('dark-mode'),
   getUserColor: () => ipcRenderer.send('getUserColor'),
   getPageStyle: () => ipcRenderer.send('getPageStyle'),
   getUserTheme: () => ipcRenderer.send('getUserTheme'),
+  
+  // --- Images & Assets ---
   getPicture: (id: string) => ipcRenderer.send('getPicture', id),
   getAllPictures: (path: string) => ipcRenderer.send('getAllPictures', path),
   getArchive: () => ipcRenderer.send('getArchive'),
   startSearch: () => ipcRenderer.send('startSearch'),
 
-  // --- Functions from the original appPreload.tsx and our new additions ---
+  // --- Archives ---
   getArchivedNotebooks: () => ipcRenderer.invoke('get-archived-notebooks'),
   archiveItem: (itemPath: string) => ipcRenderer.invoke('archive-item', itemPath),
-
-  // ✅ NEW FUNCTION FOR MULTI-ARCHIVE
   archiveNotebooks: (paths: string[]) => ipcRenderer.invoke('archive-notebooks', paths),
-
   restoreArchivedNotebooks: (paths: string[]) => ipcRenderer.invoke('restore-archived-notebooks', paths),
+  
   requestNotebooksRefresh: () => ipcRenderer.send('request-notebooks-refresh'),
   onNotebooksRefresh: (callback: () => void) => {
     ipcRenderer.on('notebooks-need-refresh', callback);
@@ -79,21 +87,20 @@ const api = {
     };
   },
 
-  // <--- CHAT BOT ---
+  // --- AI Chat Bot ---
   getAIResponse: (prompt: string) => ipcRenderer.invoke('get-ai-response', prompt),
 
-  // <--- NEW OCTAVE FUNCTIONS ---
+  // --- GNU Octave Integration ---
   startOctave: () => ipcRenderer.send('start-octave-session'),
   sendOctaveInput: (cmd: string) => ipcRenderer.send('octave-input', cmd),
   stopOctave: () => ipcRenderer.send('stop-octave-session'),
   readImage: (path: string) => ipcRenderer.invoke('read-image-file', path),
 };
 
-// Securely expose the single 'api' object to the renderer process
+// Securely expose the 'api' object to the renderer process
 contextBridge.exposeInMainWorld('api', api);
 
-
-// --- This part remains for version info ---
+// --- Version Info (Optional) ---
 window.addEventListener('DOMContentLoaded', () => {
   const { env } = process;
   const versions: Record<string, unknown> = {};

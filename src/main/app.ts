@@ -58,7 +58,7 @@ app.on('window-all-closed', () => {
 });
 
 // ==========================================
-// 1. ORIGINAL FILE SYSTEM & NOTEBOOK HANDLERS
+// 1. ORIGINAL FILE SYSTEM & NOTEBOOK HANDLERS (FIXED)
 // ==========================================
 
 ipcMain.on('new-file-request', () => {
@@ -82,15 +82,19 @@ ipcMain.on('getOS', () => {
   if (appWindow) appWindow.webContents.send('gotOS', OS);
 });
 
+// --- SAFE SAVE ---
 ipcMain.on('saveX', (event, data, filePath) => {
-  const filesPath = path.join(app.getPath('documents'), 'mathex', 'files');
-  if (fs.existsSync(filesPath)) {
+  try {
+    const filesPath = path.join(app.getPath('documents'), 'mathex', 'files');
+    // Ensure parent dir exists
+    const dir = path.dirname(filePath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
     fs.writeFileSync(filePath, data, 'utf-8');
-  } else {
-    fs.mkdirSync(filesPath, { recursive: true });
-    fs.writeFileSync(filePath, data, 'utf-8');
+    event.sender.send('notebooks-need-refresh');
+  } catch (e) {
+    console.error("Save Error:", e);
   }
-  event.sender.send('notebooks-need-refresh');
 });
 
 ipcMain.on('loadX', (event, filePath) => {
@@ -108,12 +112,28 @@ ipcMain.on('openFiles', () => {
   shell.openPath(path.join(app.getPath('documents'), 'mathex', 'files')).catch(console.error);
 });
 
+// --- SAFE MOVE (RENAME) ---
 ipcMain.on('move', (event, oldDir, newDir) => {
-  fs.renameSync(oldDir, newDir);
+  try {
+    if (fs.existsSync(oldDir)) {
+      fs.renameSync(oldDir, newDir);
+      event.sender.send('notebooks-need-refresh');
+    }
+  } catch (error) {
+    console.error('[Main] Rename Error:', error);
+  }
 });
 
-ipcMain.on('delete', (event, path, isFolder) => {
-  isFolder ? fs.rmSync(path, { recursive: true, force: true }) : fs.rmSync(path);
+// --- SAFE DELETE ---
+ipcMain.on('delete', (event, targetPath, isFolder) => {
+  try {
+    if (fs.existsSync(targetPath)) {
+      fs.rmSync(targetPath, { recursive: true, force: true });
+      event.sender.send('notebooks-need-refresh');
+    }
+  } catch (error) {
+    console.error('[Main] Delete Error:', error);
+  }
 });
 
 ipcMain.on('load', (event, file) => {
@@ -122,12 +142,34 @@ ipcMain.on('load', (event, file) => {
   });
 });
 
+// --- SAFE NEW FILE ---
 ipcMain.on('newFile', (event, filePath) => {
-  fs.writeFileSync(filePath, '{}');
+  try {
+    if (!fs.existsSync(filePath)) {
+      fs.writeFileSync(filePath, '{}');
+      event.sender.send('notebooks-need-refresh');
+    }
+  } catch (e) { console.error(e); }
 });
 
+// --- SAFE NEW FOLDER ---
 ipcMain.on('newFolder', (event, folderPath) => {
-  fs.mkdirSync(folderPath);
+  try {
+    if (!fs.existsSync(folderPath)) {
+      fs.mkdirSync(folderPath);
+    } else {
+      let i = 1;
+      let newPath = `${folderPath} (${i})`;
+      while (fs.existsSync(newPath)) {
+        i++;
+        newPath = `${folderPath} (${i})`;
+      }
+      fs.mkdirSync(newPath);
+    }
+    event.sender.send('notebooks-need-refresh');
+  } catch (error) {
+    console.error('[Main] New Folder Error:', error);
+  }
 });
 
 // --- Tree Building Logic ---
@@ -196,7 +238,6 @@ ipcMain.on('getArchive', () => {
   const filesPath = path.join(__dirname, '..', 'files');
   if(!fs.existsSync(filesPath)) return;
 
-  // FIX 1: Explicitly typed arrays instead of 'any[]'
   const groupsToFilter: string[] = [];
   const allGroups: NotebookBlock[] = [];
   
@@ -223,7 +264,6 @@ ipcMain.on('getArchive', () => {
   }
   scan(filesPath);
 
-  // FIX 2: Explicit typing in map
   const uniqueGroups: ArchivedGroup[] = [...new Set(groupsToFilter)].map(name => ({ 
     groupName: name, 
     subGroups: [] as NotebookBlock[] 
@@ -242,7 +282,6 @@ ipcMain.on('startSearch', () => {
   const filesPath = path.join(app.getPath('documents'), 'mathex', 'files');
   if(!fs.existsSync(filesPath)) return;
 
-  // FIX 3: Explicit type for results
   const results: SearchResult[] = [];
   
   function traverse(dir: string) {
@@ -266,8 +305,9 @@ ipcMain.on('startSearch', () => {
 });
 
 // ==========================================
-// 2. IMAGE READER FOR PLOTS (REQUIRED)
+// 2. IMAGE READER (FIXED: Remove Handler First)
 // ==========================================
+ipcMain.removeHandler('read-image-file'); // Prevent "Second Handler" error
 ipcMain.handle('read-image-file', async (_event, filePath: string) => {
   try {
     if (fs.existsSync(filePath)) {
@@ -282,8 +322,9 @@ ipcMain.handle('read-image-file', async (_event, filePath: string) => {
 });
 
 // ==========================================
-// 3. AI HANDLER
+// 3. AI HANDLER (FIXED: Remove Handler First)
 // ==========================================
+ipcMain.removeHandler('get-ai-response'); // Prevent "Second Handler" error
 ipcMain.handle('get-ai-response', async (_event, prompt: string) => {
   const OLLAMA_URL = 'http://localhost:11434/api/generate';
   try {
@@ -307,7 +348,7 @@ ipcMain.handle('get-ai-response', async (_event, prompt: string) => {
 });
 
 // ==========================================
-// 4. GNU OCTAVE HANDLER (FIXED FOR NATIVE)
+// 4. GNU OCTAVE HANDLER (FIXED)
 // ==========================================
 
 let octaveSession: ChildProcessWithoutNullStreams | null = null;
@@ -324,35 +365,22 @@ ipcMain.on('start-octave-session', (event) => {
   const octaveBin = 'C:\\Program Files\\GNU Octave\\Octave-10.3.0\\mingw64\\bin';
   const executable = path.join(octaveBin, 'octave-gui.exe');
   
-  // Go up from 'bin' -> 'mingw64' -> 'share' -> 'qt5' -> 'plugins'
   const qtPlugins = path.resolve(octaveBin, '..', 'share', 'qt5', 'plugins');
 
   try {
-    // 2. CONFIGURE ENVIRONMENT (The Fix)
+    // 2. CONFIGURE ENVIRONMENT
     const env = { ...process.env };
-    
-    // Add bin to PATH so Octave finds DLLs
     env.PATH = `${octaveBin};${env.PATH}`;
-    
-    // Tell Qt where plugins are (Fixes crash)
     env.QT_PLUGIN_PATH = qtPlugins;
-    
-    // Force Offscreen (Fixes external window popup)
-    // env.QT_QPA_PLATFORM = 'offscreen';
 
     // 3. SPAWN
-    octaveSession = spawn(executable, ['--interactive', '--quiet', '--no-gui'], {
+    const initCommands = "PS1('>> '); more off; graphics_toolkit('qt'); set(0, 'defaultfigurevisible', 'off');";
+
+    octaveSession = spawn(executable, ['--eval', initCommands, '--persist', '--interactive', '--quiet', '--no-gui'], {
       shell: false,       
       cwd: octaveBin,
       env: env
     });
-
-    if (octaveSession.stdin) {
-        octaveSession.stdin.write("more off\n"); 
-        octaveSession.stdin.write("PS1('>> ');\n");
-        octaveSession.stdin.write("graphics_toolkit('qt');\n");
-        octaveSession.stdin.write("set(0, 'defaultfigurevisible', 'off');\n");
-    }
 
     // --- OUTPUT LISTENERS ---
     const sendOutput = (data: Buffer) => {

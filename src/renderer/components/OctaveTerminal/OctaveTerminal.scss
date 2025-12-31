@@ -220,82 +220,406 @@
 }
 // src/renderer/components/OctaveTerminal/OctaveTerminal.scss
 
-// ... (Existing styles) ...
-
-// --- NEW STYLES FOR PLOT BUTTON ---
-.run-btn.plot-btn {
-    background-color: #0277bd !important; // Blue for Plot
-    border-color: #01579b !important;
-    &:hover { background-color: #0288d1 !important; }
+// --- Mixins for "Glass" Effect ---
+@mixin glass-panel {
+  background: var(--app-bg, #1e1e1e);
+  border: 1px solid var(--border-color, #333);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
-// --- NEW STYLES FOR PLOT MODAL ---
-.plot-modal-overlay {
-    position: absolute;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(3px);
-    z-index: 200; // Above split panes
+.octave-fullscreen-overlay {
+  // FIX: Reverted to top: 0 to completely cover the main app and titlebar
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 10000; // High z-index to ensure it sits on top of everything
+  
+  // The overlay wrapper itself allows events
+  pointer-events: auto; 
+
+  display: flex;
+  font-family: 'Segoe UI', sans-serif;
+  color: #ccc;
+  background-color: var(--app-bg, #202020); // Ensure opaque background to hide main app
+
+  // The container fills the screen
+  .matlab-container {
+    width: 100%;
+    height: 100%;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    animation: fadeIn 0.2s ease-out;
-
-    .plot-window {
-        background-color: #252526;
-        border: 1px solid #454545;
-        border-radius: 8px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    flex-direction: row;
+    overflow: hidden;
+    
+    // --- RESIZER ---
+    .resizer {
+        width: 6px;
+        background-color: var(--panel-bgcolor);
+        border-left: 1px solid var(--app-border-color);
+        border-right: 1px solid var(--app-border-color);
+        cursor: col-resize;
         display: flex;
-        flex-direction: column;
-        max-width: 90%;
-        max-height: 90%;
-        animation: scaleIn 0.2s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+        justify-content: center;
+        align-items: center;
+        z-index: 100;
+        transition: background-color 0.2s;
 
-        .plot-header {
-            padding: 10px 15px;
-            background-color: #333;
-            border-bottom: 1px solid #454545;
+        &:hover, &:active {
+            background-color: var(--app-accent-color);
+            .handle-bar { background-color: white; }
+        }
+
+        .handle-bar {
+            width: 2px;
+            height: 20px;
+            background-color: #555;
+            border-radius: 1px;
+        }
+    }
+
+    // --- SHARED PANE STYLES ---
+    .pane {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      min-width: 200px; 
+
+      .pane-toolbar {
+        height: 40px;
+        background-color: var(--panel-bgcolor);
+        border-bottom: 1px solid var(--app-border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 10px;
+        user-select: none;
+        
+        .group-left {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-            border-radius: 8px 8px 0 0;
-            font-weight: bold;
-            color: #ddd;
+            gap: 10px;
+        }
 
-            button {
-                background: none; border: none; color: #aaa; cursor: pointer;
-                font-size: 1.2rem; display: flex;
-                &:hover { color: #fff; }
+        .script-name-input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-weight: 500;
+            width: 150px;
+            outline: none;
+            border-bottom: 1px solid transparent;
+            &:focus { border-bottom-color: var(--app-accent-color); }
+        }
+
+        .pane-title {
+          font-weight: 600;
+          color: hsl(var(--theme-hue), 60%, 80%);
+          font-size: 0.9rem;
+          display: flex; align-items: center; gap: 8px;
+        }
+
+        .pane-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            // No-drag region for buttons so they are clickable
+            -webkit-app-region: no-drag; 
+
+            .divider-v {
+                width: 1px; height: 16px;
+                background-color: #444;
+                margin: 0 4px;
+            }
+            
+            button, .icon-btn {
+                background: transparent;
+                border: 1px solid transparent;
+                color: #ccc;
+                height: 28px;
+                padding: 0 8px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 0.9rem;
+                display: flex; align-items: center; justify-content: center;
+
+                &:hover { background: rgba(255,255,255,0.1); color: #fff; }
+                &.danger:hover { background: #d32f2f; color: white; }
+            }
+
+            .run-btn {
+                background-color: #2e7d32;
+                color: white;
+                font-size: 0.8rem;
+                font-weight: 600;
+                gap: 6px;
+                padding: 0 12px;
+                border: 1px solid #1b5e20;
+                
+                &:hover { background-color: #388e3c; }
+            }
+        }
+      }
+    }
+
+    // --- EDITOR PANE SPECIFIC ---
+    .editor-pane {
+        background-color: #1e1e1e;
+        
+        .editor-area-wrapper {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+            position: relative;
+
+            .gutter {
+                width: 45px;
+                background-color: #1e1e1e;
+                border-right: 1px solid #333;
+                overflow: hidden; 
+                flex-shrink: 0;
+
+                .line-numbers {
+                    padding-top: 15px; 
+                    text-align: right;
+                    padding-right: 8px;
+                    color: #555;
+                    font-family: 'Consolas', 'Monaco', monospace;
+                    font-size: 14px;
+                    line-height: 1.5;
+                }
+            }
+            
+            .code-editor {
+                flex: 1;
+                background-color: transparent;
+                border: none;
+                resize: none;
+                padding: 15px;
+                color: #d4d4d4;
+                font-family: 'Consolas', 'Monaco', monospace;
+                font-size: 14px;
+                line-height: 1.5;
+                outline: none;
+                white-space: pre; 
+                overflow: auto; 
+
+                &::placeholder { color: #444; font-style: italic; }
             }
         }
 
-        .plot-content {
-            padding: 20px;
+        .pane-statusbar {
+            height: 24px;
+            background-color: var(--app-accent-color);
+            color: black;
+            font-size: 0.75rem;
             display: flex;
-            justify-content: center;
             align-items: center;
-            background-color: #fff; // Plots usually look best on white
+            justify-content: flex-end;
+            gap: 15px;
+            padding: 0 10px;
+            font-weight: 600;
+        }
+    }
 
-            img {
-                max-width: 100%;
-                max-height: 70vh;
-                object-fit: contain;
-                border: 1px solid #ddd;
+    // --- CONSOLE PANE SPECIFIC ---
+    .console-pane {
+        background-color: #0f0f0f;
+
+        .console-body {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            color: #e0e0e0;
+            
+            .line { white-space: pre-wrap; margin-bottom: 2px; }
+
+            .input-area {
+                display: flex;
+                margin-top: 5px;
+                .prompt { color: var(--app-accent-color); margin-right: 8px; font-weight: bold; }
+                input {
+                    flex: 1;
+                    background: transparent;
+                    border: none;
+                    color: #fff;
+                    outline: none;
+                    font-family: inherit;
+                    font-size: inherit;
+                }
             }
         }
+    }
+  }
+}
 
-        .plot-footer {
-            padding: 8px 15px;
-            background-color: #333;
-            color: #888;
-            font-size: 0.8rem;
-            text-align: center;
-            border-radius: 0 0 8px 8px;
+// --- FLOATING PLOT WINDOW ---
+.floating-plot-window {
+  @include glass-panel;
+  position: absolute; 
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  pointer-events: auto; 
+  min-width: 300px;
+  min-height: 200px;
+  resize: none; 
+
+  &.active {
+    // FIX: Using --app-accent-color to match the green theme
+    border-color: var(--app-accent-color, #007acc);
+    // Simple glow effect using the accent color
+    box-shadow: 0 0 8px var(--app-accent-color, #007acc);
+  }
+
+  // Header (Draggable Handle)
+  .plot-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: var(--sidebar-bg, #252526);
+    border-bottom: 1px solid var(--border-color, #333);
+    cursor: grab;
+    user-select: none;
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    .title-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        color: var(--app-text, #fff);
+        
+        img.mathex-logo {
+            height: 18px;
+            width: auto;
         }
+
+        i { color: var(--app-accent-color, #4caf50); }
+    }
+
+    .window-controls {
+      display: flex;
+      gap: 6px;
+      
+      button {
+        background: none;
+        border: none;
+        color: var(--text-muted, #888);
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 4px;
+        transition: all 0.2s;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: #fff;
+        }
+
+        &.close-btn:hover {
+          background: #e81123;
+        }
+      }
+    }
+  }
+
+  // Content Area
+  .plot-content {
+    flex: 1;
+    position: relative;
+    background: #fff; 
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: crosshair;
+
+    img {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      pointer-events: none; 
+    }
+  }
+
+  // Footer (Status Bar)
+  .plot-footer {
+    padding: 4px 12px;
+    // FIX: Changed from --statusbar-bg to --app-accent-color to force theme matching
+    background: var(--app-accent-color, #007acc);
+    color: #fff;
+    font-size: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+  }
+
+  // Resizer Handle (Bottom Right)
+  .resizer-handle {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 15px;
+    height: 15px;
+    cursor: nwse-resize;
+    z-index: 20;
+    
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: 3px;
+        right: 3px;
+        width: 6px;
+        height: 6px;
+        border-right: 2px solid rgba(255,255,255,0.5);
+        border-bottom: 2px solid rgba(255,255,255,0.5);
+    }
+  }
+}
+
+// --- CUSTOM CONTEXT MENU ---
+.plot-context-menu {
+    position: fixed;
+    z-index: 10000;
+    background: var(--menu-bg, #2d2d2d);
+    border: 1px solid var(--border-color, #454545);
+    border-radius: 6px;
+    padding: 4px 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    min-width: 150px;
+    animation: fadeIn 0.1s ease-out;
+
+    .menu-item {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+        color: var(--app-text, #eee);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+
+        &:hover {
+            background: var(--app-accent-color, #007acc);
+            color: #fff;
+        }
+
+        i { font-size: 1rem; }
     }
 }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes scaleIn { from { transform: scale(0.9); } to { transform: scale(1); } }
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}

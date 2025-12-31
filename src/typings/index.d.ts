@@ -21,17 +21,23 @@ declare global {
   }
 
   // 5. Define the API Interface
-  // We explicitly list the new methods here so TypeScript finds them.
   interface IElectronAPI {
-    // Octave Methods
+    // --- Octave Methods ---
     startOctave: () => void;
     sendOctaveInput: (cmd: string) => void;
     stopOctave: () => void;
+    
+    // --- Image Methods (FIXED: Added this) ---
+    readImage: (path: string) => Promise<string | null>;
 
-    // Core Methods (Typing 'receive' safely)
+    // --- AI Methods (Optional, good to have) ---
+    getAIResponse: (prompt: string) => Promise<string>;
+
+    // --- Core Methods ---
     receive: (channel: string, func: (...args: unknown[]) => void) => (() => void);
 
-    // Allow other existing methods dynamically (disabling lint rule for this line)
+    // --- Dynamic Access (Fallback) ---
+    // This allows you to call any other method (like getNotebooks) without errors
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     [key: string]: any;
   }
