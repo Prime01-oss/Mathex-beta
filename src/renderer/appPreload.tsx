@@ -78,6 +78,7 @@ const api = {
   archiveItem: (itemPath: string) => ipcRenderer.invoke('archive-item', itemPath),
   archiveNotebooks: (paths: string[]) => ipcRenderer.invoke('archive-notebooks', paths),
   restoreArchivedNotebooks: (paths: string[]) => ipcRenderer.invoke('restore-archived-notebooks', paths),
+  createNewNotebook: () => ipcRenderer.invoke('create-new-notebook'),
   
   requestNotebooksRefresh: () => ipcRenderer.send('request-notebooks-refresh'),
   onNotebooksRefresh: (callback: () => void) => {

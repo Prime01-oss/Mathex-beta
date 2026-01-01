@@ -22,24 +22,39 @@ declare global {
 
   // 5. Define the API Interface
   interface IElectronAPI {
+    // --- Core Filesystem Methods (Moved from FileSystem.tsx) ---
+    getNotebooks: () => void;
+    openFiles: () => void;
+    // We use 'any' or 'string | number' for TreeItemIndex to avoid extra imports
+    delete: (path: string | number, isFolder?: boolean) => void; 
+    move: (oldPath: string, newPath: string) => void;
+    newFile: (path: string) => void;
+    newFolder: (path: string) => void;
+    saveX: (data: string, filePath: string) => void;
+    loadX: (filePath: string) => void;
+
+    // --- NEW METHOD ---
+    createNewNotebook: () => Promise<string>;
+
     // --- Octave Methods ---
     startOctave: () => void;
     sendOctaveInput: (cmd: string) => void;
     stopOctave: () => void;
     
-    // --- Image Methods (FIXED: Added this) ---
+    // --- Image Methods ---
     readImage: (path: string) => Promise<string | null>;
 
-    // --- AI Methods (Optional, good to have) ---
-    getAIResponse: (prompt: string) => Promise<string>;
+    createNewNotebook: () => Promise<string>;
 
-    // --- Core Methods ---
-    receive: (channel: string, func: (...args: unknown[]) => void) => (() => void);
+    // --- AI Methods ---
+    getAIResponse: (prompt: string) => Promise<string>;
+    
+    // --- IPC Helpers ---
+    send: (channel: string, data?: unknown) => void;
+    receive: (channel: string, func: (...args: unknown[]) => void) => (() => void) | undefined;
+    onNotebooksRefresh: (callback: () => void) => () => void;
 
     // --- Dynamic Access (Fallback) ---
-    // This allows you to call any other method (like getNotebooks) without errors
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    [key: string]: any;
   }
 
   // 6. Attach to Window

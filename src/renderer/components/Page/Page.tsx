@@ -17,41 +17,61 @@ const gridStyle = {
 };
 
 const Page = () => {
-  const { selectedFile, setSaveRequest } = useGeneralContext();
+  // 1. Get all necessary context setters
+  const { 
+    selectedFile, 
+    setSelectedFile, 
+    setSaveRequest, 
+    setIsFilesSidebarOpen // <--- Needed to open the sidebar
+  } = useGeneralContext();
+
   const [currentFilePath, setCurrentFilePath] = useState('');
-  
-  // Ref for the scrollable Grid container
   const gridRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setCurrentFilePath(selectedFile);
   }, [selectedFile]);
 
-  // Safety Measure: Explicitly reset scroll when file changes
   useEffect(() => {
     if (gridRef.current) {
-      // Immediate reset
       gridRef.current.scrollTop = 0;
-      
-      // Secondary reset to handle any async layout shifts
       setTimeout(() => {
         if (gridRef.current) gridRef.current.scrollTop = 0;
       }, 50);
     }
   }, [currentFilePath]);
 
-  // --- Keyboard Shortcuts ---
+  // --- GLOBAL KEYBOARD SHORTCUTS ---
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
+    const handleKeyDown = async (event: KeyboardEvent) => {
       // Ctrl+S (Save)
       if (event.key === 's' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         setSaveRequest({ cmd: 'save' });
       }
 
+      // --- NEW: Ctrl+N (Global Create) ---
+      if (event.key === 'n' && (event.ctrlKey || event.metaKey)) {
+        event.preventDefault(); // Stop "New Window"
+
+        // 1. Open the Sidebar
+        setIsFilesSidebarOpen(true);
+
+        // 2. Request Main Process to create a unique file
+        const newFilePath = await window.api.createNewNotebook();
+
+        // 3. If successful, open it in the editor
+        if (newFilePath) {
+            setSelectedFile(newFilePath);
+        }
+      }
+      // -----------------------------------
+
       // Ctrl+O (Open)
       if (event.key === 'o' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
+        // Open sidebar if closed, or just trigger open dialog
+        setIsFilesSidebarOpen(true); 
         if (selectedFile) {
           window.api.send('new-file-request');
         } else {
@@ -64,15 +84,11 @@ const Page = () => {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selectedFile, setSaveRequest]); 
+  }, [selectedFile, setSaveRequest, setIsFilesSidebarOpen, setSelectedFile]); 
 
   return (
     <div className='page' style={gridStyle}>
       {currentFilePath ? (
-        // --- THE FIX ---
-        // 1. key={currentFilePath}: Forces React to destroy the old div and create a new one. 
-        //    This guarantees a fresh scrollbar starting at 0.
-        // 2. ref={gridRef}: Allows us to programmatically ensure it stays at 0.
         <div 
           className='page-grid' 
           ref={gridRef} 

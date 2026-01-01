@@ -101,7 +101,7 @@ ipcMain.on('loadX', (event, filePath) => {
   if (fs.existsSync(filePath)) {
     fs.readFile(filePath, 'utf-8', (error, data) => {
       error ? console.error('Error Reading file: ', error)
-            : appWindow.webContents.send('gotLoadedDataX', data);
+        : appWindow.webContents.send('gotLoadedDataX', data);
     });
   } else {
     console.error('File not found!');
@@ -218,10 +218,48 @@ ipcMain.on('getNotebooks', () => {
   appWindow.webContents.send('gotNotebooks', { filesPath, root });
 });
 
+// NEW HANDLER: Global Auto-Create Notebook
+// ==========================================
+ipcMain.handle('create-new-notebook', async (event) => {
+  try {
+    const filesPath = path.join(app.getPath('documents'), 'mathex', 'files');
+    
+    // 1. Ensure directory exists
+    if (!fs.existsSync(filesPath)) {
+      fs.mkdirSync(filesPath, { recursive: true });
+    }
+
+    // 2. Find a unique filename
+    const baseName = "New File";
+    let fileName = `${baseName}.json`;
+    let filePath = path.join(filesPath, fileName);
+    let counter = 1;
+
+    while (fs.existsSync(filePath)) {
+      fileName = `${baseName} (${counter}).json`;
+      filePath = path.join(filesPath, fileName);
+      counter++;
+    }
+
+    // 3. Create the file
+    fs.writeFileSync(filePath, '{}');
+    
+    // 4. Tell the Sidebar to refresh its list
+    event.sender.send('notebooks-need-refresh');
+    
+    // 5. RETURN the path so the frontend can open it
+    return filePath;
+    
+  } catch (error) {
+    console.error("Failed to create new notebook:", error);
+    return null;
+  }
+});
+
 ipcMain.on('getPicture', (event, id) => {
   const attachPath = path.join(__dirname, '..', 'attachments');
   if (!fs.existsSync(attachPath)) return;
-  
+
   const allPics = fs.readdirSync(attachPath, { withFileTypes: true });
   let b64;
   for (const picture of allPics) {
@@ -236,11 +274,11 @@ ipcMain.on('getPicture', (event, id) => {
 
 ipcMain.on('getArchive', () => {
   const filesPath = path.join(__dirname, '..', 'files');
-  if(!fs.existsSync(filesPath)) return;
+  if (!fs.existsSync(filesPath)) return;
 
   const groupsToFilter: string[] = [];
   const allGroups: NotebookBlock[] = [];
-  
+
   function scan(dir: string) {
     const items = fs.readdirSync(dir, { withFileTypes: true });
     for (const item of items) {
@@ -249,29 +287,29 @@ ipcMain.on('getArchive', () => {
         scan(fullPath);
       } else if (item.name.endsWith('.json')) {
         try {
-            const content = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
-            if(Array.isArray(content)) {
-                content.forEach((block: NotebookBlock) => {
-                    if (block.type == 'Group' && block.groupTitle) {
-                        allGroups.push(block);
-                        groupsToFilter.push(block.groupTitle);
-                    }
-                });
-            }
-        } catch(e) { console.error(e); }
+          const content = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+          if (Array.isArray(content)) {
+            content.forEach((block: NotebookBlock) => {
+              if (block.type == 'Group' && block.groupTitle) {
+                allGroups.push(block);
+                groupsToFilter.push(block.groupTitle);
+              }
+            });
+          }
+        } catch (e) { console.error(e); }
       }
     }
   }
   scan(filesPath);
 
-  const uniqueGroups: ArchivedGroup[] = [...new Set(groupsToFilter)].map(name => ({ 
-    groupName: name, 
-    subGroups: [] as NotebookBlock[] 
+  const uniqueGroups: ArchivedGroup[] = [...new Set(groupsToFilter)].map(name => ({
+    groupName: name,
+    subGroups: [] as NotebookBlock[]
   }));
-  
+
   uniqueGroups.forEach(g => {
     if (g.groupName !== 'Default') {
-        g.subGroups = allGroups.filter(sub => sub.groupTitle === g.groupName);
+      g.subGroups = allGroups.filter(sub => sub.groupTitle === g.groupName);
     }
   });
 
@@ -280,24 +318,24 @@ ipcMain.on('getArchive', () => {
 
 ipcMain.on('startSearch', () => {
   const filesPath = path.join(app.getPath('documents'), 'mathex', 'files');
-  if(!fs.existsSync(filesPath)) return;
+  if (!fs.existsSync(filesPath)) return;
 
   const results: SearchResult[] = [];
-  
+
   function traverse(dir: string) {
     const list = fs.readdirSync(dir, { withFileTypes: true });
     list.forEach(item => {
-        const fullPath = path.join(dir, item.name);
-        if (item.isDirectory()) traverse(fullPath);
-        else if (item.name.endsWith('.json')) {
-            try {
-                results.push({
-                    filePath: fullPath,
-                    fileName: item.name.replace('.json', ''),
-                    blocks: JSON.parse(fs.readFileSync(fullPath, 'utf-8'))
-                });
-            } catch(e) { /* ignore */ }
-        }
+      const fullPath = path.join(dir, item.name);
+      if (item.isDirectory()) traverse(fullPath);
+      else if (item.name.endsWith('.json')) {
+        try {
+          results.push({
+            filePath: fullPath,
+            fileName: item.name.replace('.json', ''),
+            blocks: JSON.parse(fs.readFileSync(fullPath, 'utf-8'))
+          });
+        } catch (e) { /* ignore */ }
+      }
     });
   }
   traverse(filesPath);
@@ -364,7 +402,7 @@ ipcMain.on('start-octave-session', (event) => {
   // 1. DEFINE EXACT PATHS
   const octaveBin = 'C:\\Program Files\\GNU Octave\\Octave-10.3.0\\mingw64\\bin';
   const executable = path.join(octaveBin, 'octave-gui.exe');
-  
+
   const qtPlugins = path.resolve(octaveBin, '..', 'share', 'qt5', 'plugins');
 
   try {
@@ -377,7 +415,7 @@ ipcMain.on('start-octave-session', (event) => {
     const initCommands = "PS1('>> '); more off; graphics_toolkit('qt'); set(0, 'defaultfigurevisible', 'off');";
 
     octaveSession = spawn(executable, ['--eval', initCommands, '--persist', '--interactive', '--quiet', '--no-gui'], {
-      shell: false,       
+      shell: false,
       cwd: octaveBin,
       env: env
     });
@@ -418,9 +456,9 @@ ipcMain.on('octave-input', (_event, command) => {
 ipcMain.on('stop-octave-session', () => {
   if (octaveSession) {
     try {
-        spawn('taskkill', ['/pid', octaveSession.pid.toString(), '/f', '/t']);
+      spawn('taskkill', ['/pid', octaveSession.pid.toString(), '/f', '/t']);
     } catch (e) {
-        octaveSession.kill();
+      octaveSession.kill();
     }
     octaveSession = null;
   }

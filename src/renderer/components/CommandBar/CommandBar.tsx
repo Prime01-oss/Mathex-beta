@@ -14,40 +14,38 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useGeneralContext } from '@components/GeneralContext';
 
+// --- OPTIMIZATION: Moved outside main component ---
+function RenderResults() {
+  const { actions } = useGeneralContext();
+  
+  // Updating the actions using `useRegisterActions`
+  useRegisterActions(actions);
+  const { results } = useMatches();
+
+  return (
+    <KBarResults
+      items={results}
+      onRender={({ item, active }) =>
+        typeof item === 'string' ? (
+          <div>{item}</div>
+        ) : (
+          <div className={`command-bar-result${active ? ' active' : ''}`}>
+            {item.name}
+          </div>
+        )
+      }
+    />
+  );
+}
+
 export function CommandBar() {
   const { t } = useTranslation();
-
-  const { actions } = useGeneralContext();
-
-  function RenderResults() {
-    // updating the actions using `useRegisterActions` *before*
-    // getting the results from `useMatches` so the results
-    // are always up to date. the actions are also up to date
-    // cause they are now stateful
-
-    useRegisterActions(actions);
-    const { results } = useMatches();
-
-    return (
-      <KBarResults
-        items={results}
-        onRender={({ item, active }) =>
-          typeof item === 'string' ? (
-            <div>{item}</div>
-          ) : (
-            <div className={`command-bar-result${active ? ' active' : ''}`}>
-              {item.name}
-            </div>
-          )
-        }
-      />
-    );
-  }
+  // Note: 'actions' is no longer needed here, it is retrieved inside RenderResults
 
   const animatorStyle = {
     maxWidth: '600px',
     width: '100%',
-    zIndex: '20002', // Increased to be safe inside the positioner
+    zIndex: '20002', 
     padding: '10px 8px',
     outline: '1px solid var(--page-border)',
     backdropFilter: 'blur(7px)',
@@ -60,9 +58,6 @@ export function CommandBar() {
 
   return (
     <KBarPortal>
-      {/* Updated zIndex to 20001 to ensure it appears above the OctaveTerminal 
-          (which has a z-index of 10000) and context menus.
-      */}
       <KBarPositioner style={{ width: 'unset', zIndex: 20001 }}>
         <KBarAnimator style={animatorStyle}>
           <KBarSearch

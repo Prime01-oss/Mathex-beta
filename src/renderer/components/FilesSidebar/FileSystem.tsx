@@ -41,15 +41,16 @@ interface IElectronAPI {
   newFolder: (path: string) => void;
   saveX: (data: string, filePath: string) => void;
   loadX: (filePath: string) => void;
+  createNewNotebook: () => Promise<string>;
 
   // System & Utils
   getOS: () => void;
   getAIResponse: (prompt: string) => Promise<string>;
-  
+
   // IPC Communication
   send: (channel: string, data?: unknown) => void;
   receive: (channel: string, func: (...args: unknown[]) => void) => (() => void) | undefined;
-  
+
   // Listeners
   onNotebooksRefresh: (callback: () => void) => () => void;
 }
@@ -78,7 +79,7 @@ function FileSystem() {
   const [selectedItems, setSelectedItems] = useState([]);
   const [selectedDirectory, setSelectedDirectory] = useState<TreeItemIndex>('root');
   const [focusedItem, setFocusedItem] = useState<TreeItemIndex>(-1);
-  
+
   const [isDeleteMode, setIsDeleteMode] = useState(false);
   const [checkedItems, setCheckedItems] = useState<string[]>([]);
 
@@ -104,11 +105,11 @@ function FileSystem() {
 
   useEffect(() => {
     const cleanup = window.api.onNotebooksRefresh(() => {
-        fetchNotebooks();
+      fetchNotebooks();
     });
 
     return () => {
-        cleanup();
+      cleanup();
     };
   }, [fetchNotebooks]);
 
@@ -118,10 +119,10 @@ function FileSystem() {
 
     const sortTree = (itemsMap: TreeItemsObj) => {
       const sortedMap = { ...itemsMap };
-      
+
       Object.keys(sortedMap).forEach((key) => {
         const item = sortedMap[key];
-        
+
         if (item.children && item.children.length > 0) {
           const folders = item.children.filter(childId => sortedMap[childId]?.isFolder);
           const files = item.children.filter(childId => !sortedMap[childId]?.isFolder);
@@ -155,14 +156,14 @@ function FileSystem() {
       let hasMatchingChild = false;
       if (item.children) {
         item.children.forEach((childId) => {
-           if (traverse(childId as string)) {
-             hasMatchingChild = true;
-           }
+          if (traverse(childId as string)) {
+            hasMatchingChild = true;
+          }
         });
       }
 
       const nameMatches = item.data.toLowerCase().includes(lowerQuery);
-      const tagMatches = item.tags?.some((tag) => 
+      const tagMatches = item.tags?.some((tag) =>
         tag.toLowerCase().includes(lowerQuery)
       );
 
@@ -233,13 +234,45 @@ function FileSystem() {
   };
 
   const addFile = () => {
+    // 1. Check if file already exists
     if (itemExistsInParent(newFileName, selectedDirectory, items, false)) {
       setErrorModalContent(t('Modal 2'));
       setErrorModalOpen(true);
       return;
     }
+
+    // --- ADD THIS BLOCK ---
+    // 2. Construct the path of the new file manually
+    // We replicate the logic from FileSystemHelpers to ensure the ID matches
+    const parentItem = items[selectedDirectory];
+    const newFilePath = parentItem.path + '\\' + newFileName + '.json';
+
+    // 3. Auto-open the new file
+    setSelectedFile(newFilePath);
+
+    // 4. Focus the item in the tree (for keyboard navigation)
+    setFocusedItem(newFilePath);
+    // ----------------------
+
+    // 5. Update the tree state
     setItems((prev) => generateStateWithNewFile(prev, selectedDirectory));
   };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Check for Ctrl + N (or Cmd + N on Mac)
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'n') {
+        e.preventDefault(); // CRITICAL: Stops the default "New Window" action
+        addFile();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup listener on unmount or re-render
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [addFile]);
 
   const handleRenameItem = (item: MathTreeItem, name: string): void => {
     const lastSeparatorIndex = Math.max(item.path.lastIndexOf('/'), item.path.lastIndexOf('\\'));
@@ -257,10 +290,10 @@ function FileSystem() {
       setErrorModalOpen(true);
     } else {
       setItems((prev) => {
-        const newPath = item.isFolder 
-            ? `${dirName}${name}` 
-            : `${dirName}${name}.json`;
-            
+        const newPath = item.isFolder
+          ? `${dirName}${name}`
+          : `${dirName}${name}.json`;
+
         const oldPath = item.index;
 
         let newItems = { ...prev };
@@ -353,10 +386,10 @@ function FileSystem() {
         >
           {t('My Notebooks')}
         </span>
-        
+
         <div className='file-system-header-buttons'>
-          <button 
-            onClick={toggleDeleteMode} 
+          <button
+            onClick={toggleDeleteMode}
             data-tooltip={isDeleteMode ? t('Cancel') : t('Delete Multiple')}
             className={isDeleteMode ? 'active-delete-mode' : ''}
           >
@@ -375,8 +408,8 @@ function FileSystem() {
               </button>
             </>
           ) : (
-            <button 
-              onClick={handleBulkDelete} 
+            <button
+              onClick={handleBulkDelete}
               data-tooltip={t('Confirm Delete')}
               className="confirm-delete-btn"
               disabled={checkedItems.length === 0}
@@ -387,9 +420,9 @@ function FileSystem() {
           )}
         </div>
       </div>
-      
+
       <div>
-          <Search />
+        <Search />
       </div>
 
       <div className='files-tree-container' onClick={handleClickedOutsideItem}>
@@ -407,7 +440,7 @@ function FileSystem() {
             ['fileSystem']: {
               focusedItem,
               expandedItems,
-              selectedItems: selectedItems, 
+              selectedItems: selectedItems,
             },
           }}
           onDrop={handleOnDrop}
@@ -451,11 +484,11 @@ function FileSystem() {
 
       <div className='file-system-footer'>
         <div className='footer-instruction'>
-          <span>{t('Delete')}</span> 
+          <span>{t('Delete')}</span>
           <kbd>Del</kbd>
         </div>
         <div className='footer-instruction'>
-          <span>{t('Rename')}</span> 
+          <span>{t('Rename')}</span>
           <kbd>Shift+R</kbd>
         </div>
       </div>

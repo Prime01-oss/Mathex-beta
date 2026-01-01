@@ -42,6 +42,9 @@ contextBridge.exposeInMainWorld('api', {
       ipcRenderer.on(channel, (event, ...args) => func(...(args as [])));
     }
   },
+  createNewNotebook: () => {
+    ipcRenderer.invoke('create-new-notebook');
+  },
   getNotebooks: () => {
     ipcRenderer.send('getNotebooks');
   },

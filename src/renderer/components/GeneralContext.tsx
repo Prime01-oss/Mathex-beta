@@ -4,6 +4,7 @@ import React, {
   useContext,
   useEffect,
   useState,
+  useMemo, // <--- Import useMemo
 } from 'react';
 import { newWidgetRequest } from '@renderer/common/types';
 import i18n from '@common/i18n';
@@ -26,7 +27,6 @@ const staticActions: Action[] = [
   { id: 'black', name: 'Black', parent: 'color' },
   { id: 'light', name: 'Light', parent: 'theme' },
   { id: 'dark', name: 'Dark', parent: 'theme' },
-  // New Action
   { 
     id: 'tools', 
     name: 'Tools', 
@@ -34,7 +34,7 @@ const staticActions: Action[] = [
   { 
     id: 'octave', 
     name: 'GNU Octave Terminal', 
-    shortcut: ['o'], // You can press 'o' in the command bar to trigger it
+    shortcut: ['o'], 
     keywords: 'math matlab console terminal',
     parent: 'tools' 
   },
@@ -109,25 +109,27 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
     document.body.classList.toggle('dark-mode', isDark);
   };
 
-  const dynamicActions = staticActions.map(action => {
-    const translatedAction = { ...action, name: i18n.t(action.name) };
-    switch (action.id) {
-      case 'english': return { ...translatedAction, perform: () => setLang('en') };
-      case 'hindi': return { ...translatedAction, perform: () => setLang('hi') };
-      case 'blue': return { ...translatedAction, perform: () => setColor('blue', 210) };
-      case 'pink': return { ...translatedAction, perform: () => setColor('pink', 300) };
-      case 'yellow': return { ...translatedAction, perform: () => setColor('yellow', 35) };
-      case 'purple': return { ...translatedAction, perform: () => setColor('purple', 250) };
-      case 'red': return { ...translatedAction, perform: () => setColor('red', 0) };
-      case 'green': return { ...translatedAction, perform: () => setColor('green', 140) };
-      case 'black': return { ...translatedAction, perform: () => setColor('black') };
-      case 'light': return { ...translatedAction, perform: () => setTheme(0) };
-      case 'dark': return { ...translatedAction, perform: () => setTheme(1) };
-      // 2. ADD PERFORM LOGIC HERE
-      case 'octave': return { ...translatedAction, perform: () => setIsOctaveOpen(true) };
-      default: return translatedAction;
-    }
-  });
+  // --- OPTIMIZATION 1: Memoize Dynamic Actions ---
+  const dynamicActions = useMemo(() => {
+    return staticActions.map(action => {
+      const translatedAction = { ...action, name: i18n.t(action.name) };
+      switch (action.id) {
+        case 'english': return { ...translatedAction, perform: () => setLang('en') };
+        case 'hindi': return { ...translatedAction, perform: () => setLang('hi') };
+        case 'blue': return { ...translatedAction, perform: () => setColor('blue', 210) };
+        case 'pink': return { ...translatedAction, perform: () => setColor('pink', 300) };
+        case 'yellow': return { ...translatedAction, perform: () => setColor('yellow', 35) };
+        case 'purple': return { ...translatedAction, perform: () => setColor('purple', 250) };
+        case 'red': return { ...translatedAction, perform: () => setColor('red', 0) };
+        case 'green': return { ...translatedAction, perform: () => setColor('green', 140) };
+        case 'black': return { ...translatedAction, perform: () => setColor('black') };
+        case 'light': return { ...translatedAction, perform: () => setTheme(0) };
+        case 'dark': return { ...translatedAction, perform: () => setTheme(1) };
+        case 'octave': return { ...translatedAction, perform: () => setIsOctaveOpen(true) };
+        default: return translatedAction;
+      }
+    });
+  }, [language]); // Only re-compute when language changes
 
   useEffect(() => {
     setTheme(darkTheme ? 1 : 0);
@@ -139,36 +141,50 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
   }, []); 
 
   useEffect(() => {
+    // FIX: No more @ts-ignore needed!
     window.api.getOS();
-    window.api.receive('gotOS', (data: string) => {
+    
+    // FIX: Typed correctly via IElectronAPI
+    const removeListener = window.api.receive('gotOS', (data: string) => {
       setCurrentOS(data);
     });
+    
+    return () => {
+      if (removeListener) removeListener();
+    }
   }, []);
 
+  // --- OPTIMIZATION 2: Memoize Context Value ---
+  const contextValue = useMemo(() => ({
+    newWidgetRequest, setNewWidgetRequest,
+    clearPageRequest, setClearPageRequest,
+    selectedFile, setSelectedFile,
+    saveRequest, setSaveRequest,
+    currentFileTags, setCurrentFileTags,
+    isMathSidebarOpen, setIsMathSidebarOpen,
+    isFilesSidebarOpen, setIsFilesSidebarOpen,
+    isRtl, setIsRtl,
+    language, setLang,
+    darkTheme, setTheme,
+    colorTheme, setColor,
+    actions: dynamicActions,
+    currentOS,
+    isShortcutsModalOpen, setIsShortcutsModalOpen,
+    isChalkBoardOpen, setIsChalkBoardOpen,
+    isCalculatorOpen, setIsCalculatorOpen,
+    isChatBotOpen, setIsChatBotOpen, 
+    isOctaveOpen, setIsOctaveOpen, 
+    searchQuery, setSearchQuery,
+  }), [
+    newWidgetRequest, clearPageRequest, selectedFile, saveRequest, 
+    currentFileTags, isMathSidebarOpen, isFilesSidebarOpen, isRtl, 
+    language, darkTheme, colorTheme, dynamicActions, currentOS, 
+    isShortcutsModalOpen, isChalkBoardOpen, isCalculatorOpen, 
+    isChatBotOpen, isOctaveOpen, searchQuery
+  ]);
+
   return (
-    <GeneralContext.Provider
-      value={{
-        newWidgetRequest, setNewWidgetRequest,
-        clearPageRequest, setClearPageRequest,
-        selectedFile, setSelectedFile,
-        saveRequest, setSaveRequest,
-        currentFileTags, setCurrentFileTags,
-        isMathSidebarOpen, setIsMathSidebarOpen,
-        isFilesSidebarOpen, setIsFilesSidebarOpen,
-        isRtl, setIsRtl,
-        language, setLang,
-        darkTheme, setTheme,
-        colorTheme, setColor,
-        actions: dynamicActions,
-        currentOS,
-        isShortcutsModalOpen, setIsShortcutsModalOpen,
-        isChalkBoardOpen, setIsChalkBoardOpen,
-        isCalculatorOpen, setIsCalculatorOpen,
-        isChatBotOpen, setIsChatBotOpen, 
-        isOctaveOpen, setIsOctaveOpen, 
-        searchQuery, setSearchQuery,
-      }}
-    >
+    <GeneralContext.Provider value={contextValue}>
       <KBarProvider
         actions={dynamicActions}
         options={{ toggleShortcut: '$mod+Shift+p' }}

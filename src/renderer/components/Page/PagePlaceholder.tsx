@@ -14,7 +14,7 @@ const PagePlaceholder = () => {
         <kbd className='kbc-button'>
           <i className='fi fi-rr-notebook'></i>
         </kbd>{' '}
-        ({t("Placeholder Or")} <Shortcut shortcut={['Ctrl', 'o']} />) {t("Placeholder 3")}!
+        ({t("Placeholder Or")} <Shortcut shortcut={['Ctrl', 'n']} />) {t("Placeholder 3")}!
       </div>
     </div>
   );
