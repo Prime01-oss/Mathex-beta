@@ -38,6 +38,21 @@ const staticActions: Action[] = [
     keywords: 'math matlab console terminal',
     parent: 'tools' 
   },
+  // --- NEW SHORTCUTS ADDED HERE ---
+  { 
+    id: 'chatbot', 
+    name: 'AI Chatbot', 
+    shortcut: ['a'], 
+    keywords: 'ai chat assistant help',
+    parent: 'tools' 
+  },
+  { 
+    id: 'calculator', 
+    name: 'Calculator', 
+    shortcut: ['c'], 
+    keywords: 'calc math numbers',
+    parent: 'tools' 
+  },
 ];
 
 const GeneralContext = createContext(null);
@@ -126,6 +141,9 @@ function GeneralContextProvider({ children }: PropsWithChildren) {
         case 'light': return { ...translatedAction, perform: () => setTheme(0) };
         case 'dark': return { ...translatedAction, perform: () => setTheme(1) };
         case 'octave': return { ...translatedAction, perform: () => setIsOctaveOpen(true) };
+        // --- NEW CASES ADDED HERE ---
+        case 'chatbot': return { ...translatedAction, perform: () => setIsChatBotOpen(true) };
+        case 'calculator': return { ...translatedAction, perform: () => setIsCalculatorOpen(true) };
         default: return translatedAction;
       }
     });
